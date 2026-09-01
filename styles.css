@@ -1,0 +1,774 @@
+/* ============================================================
+   FAMILY NEAT — Design System
+   Concepto: la app organiza la casa "por estancias" y por eso
+   el lenguaje visual usa color por habitación + formas (■ ● ▲)
+   como código universal de lectura rápida para toda la familia.
+   Tipografía: Baloo 2 (display, cercana y redondeada) +
+   Plus Jakarta Sans (texto) + JetBrains Mono (cifras de dinero,
+   con aire de "libro de cuentas" — coherente con el rol del
+   padre como cajero digital).
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
+
+/* ---------- 1. TOKENS ---------- */
+:root{
+  --font-display: 'Baloo 2', system-ui, sans-serif;
+  --font-body: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --color-bg: #FFFFFF;
+  --color-surface: #FFFFFF;
+  --color-surface-soft: #F1F8F6;
+  --color-ink: #16342F;
+  --color-ink-soft: #5C7A73;
+  --color-ink-faint: #93ADA6;
+  --color-border: #DCEDE7;
+
+  --color-primary: #00C9A7;
+  --color-primary-dark: #009B82;
+  --color-primary-soft: #D6F5EE;
+
+  /* Colores por estancia — el "mapa de la casa" */
+  --color-salon: #FF6B5B;
+  --color-salon-soft: #FFE3DF;
+  --color-cocina: #FF9F43;
+  --color-cocina-soft: #FFECD8;
+  --color-bano: #4FA8E0;
+  --color-bano-soft: #DFF0FB;
+  --color-habitacion: #9B79F0;
+  --color-habitacion-soft: #EBE3FE;
+
+  --color-puntos: #FFD23F;
+  --color-puntos-ink: #7A5B00;
+
+  --color-success: #22B573;
+  --color-success-soft: #DEF7EC;
+  --color-warning: #FF9F43;
+  --color-warning-soft: #FFECD8;
+  --color-danger: #E5484D;
+  --color-danger-soft: #FDE3E3;
+
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-pill: 999px;
+
+  --shadow-sm: 0 2px 8px rgba(22,52,47,.06);
+  --shadow-md: 0 8px 24px rgba(22,52,47,.10);
+  /* --shadow-lg: 0 20px 48px rgba(22,52,47,.16); */
+
+  --ease: cubic-bezier(.4,0,.2,1);
+  --speed: 200ms;
+
+  --app-max-width: 460px;
+}
+
+/* ---------- 2. RESET ---------- */
+*, *::before, *::after{ box-sizing: border-box; }
+html{ -webkit-text-size-adjust: 100%; }
+body{
+  margin:0;
+  font-family: var(--font-body);
+  color: var(--color-ink);
+  background: white;
+  -webkit-font-smoothing: antialiased;
+}
+h1,h2,h3,p,ul,ol,fieldset,figure{ margin:0; padding:0; }
+ul,ol{ list-style:none; }
+button{ font-family: inherit; }
+img{ max-width:100%; display:block; }
+a{ color: inherit; }
+fieldset{ border:none; min-width:0; }
+legend{ padding:0; }
+
+:focus-visible{
+  outline: 3px solid var(--color-primary-dark);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---------- 3. APP SHELL (marco tipo móvil en escritorio) ---------- */
+.app-shell{
+  max-width: var(--app-max-width);
+  margin: 0 auto;
+  min-height: 100vh;
+  background: var(--color-bg);
+  position: relative;
+  overflow-x: hidden;
+}
+@media (min-width: 560px){
+  body{ padding: 32px 16px; }
+  .app-shell{
+    min-height: calc(100vh - 64px);
+    box-shadow: var(--shadow-lg);
+  }
+}
+
+.pantallas{ position:relative; }
+.pantalla{
+   display:none; 
+   position:relative; 
+   animation: pantalla-in var(--speed) var(--ease);
+  background-color: white; }
+.pantalla.activa{ display:block; }
+@keyframes pantalla-in{
+  from{ opacity:0; transform: translateY(8px); }
+  to{ opacity:1; transform: translateY(0); }
+}
+.pantalla > hr{ display:none; } /* los <hr> del maquetado original quedan ocultos como separadores visuales */
+
+/* Contenido con relleno estándar de pantalla */
+.pantalla-contenido{ padding: 28px 24px 110px; min-height: 100vh; }
+.pantalla-contenido.sin-nav{ padding-bottom: 32px; display:flex; flex-direction:column; justify-content:center; min-height:100vh; }
+
+/* ---------- 3.1 BOTÓN ATRÁS ---------- */
+.barra-superior{
+  display:flex; align-items:center; margin-bottom:18px; align-self:flex-start;
+}
+.btn-atras{
+  width:40px; height:40px; border-radius:50%; background: var(--color-surface);
+  display:flex; align-items:center; justify-content:center; font-size:1.15rem;
+  color: var(--color-ink); box-shadow: var(--shadow-sm); border:2px solid var(--color-border);
+  flex-shrink:0; transition: transform var(--speed) var(--ease), border-color var(--speed) var(--ease);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+.btn-atras:active{ transform: scale(.92); }
+.btn-atras:hover{ border-color: var(--color-primary); }
+
+/* Botón atrás flotante para pantallas de dashboard con header propio */
+header .btn-atras{ width:34px; height:34px; font-size:1rem; margin-right:2px; }
+
+/* ---------- 3.2 NOTA DE DEMOSTRACIÓN ---------- */
+.nota-demo{
+  margin-top:14px; background: var(--color-primary-soft); color: var(--color-primary-dark);
+  border-radius: var(--radius-md); padding:10px 14px; font-size:.82rem; font-weight:600;
+  display:flex; align-items:center; gap:8px; align-self:stretch;
+}
+.nota-demo strong{ font-family: var(--font-mono); letter-spacing:.03em; }
+
+/* ---------- 4. TIPOGRAFÍA ---------- */
+h1{ font-family: var(--font-display); font-weight:700; font-size: 1.9rem; line-height:1.15; color: var(--color-ink); }
+h2{ font-family: var(--font-display); font-weight:600; font-size: 1.25rem; color: var(--color-ink); }
+h3{ font-family: var(--font-display); font-weight:600; font-size: 1.05rem; color: var(--color-ink); }
+p{ color: var(--color-ink-soft); font-size: .95rem; line-height:1.5; }
+.eyebrow{
+  display:inline-block; font-family: var(--font-display); font-weight:600;
+  font-size:.72rem; letter-spacing:.06em; text-transform:uppercase;
+  color: var(--color-primary-dark); background: var(--color-primary-soft);
+  padding: 4px 12px; border-radius: var(--radius-pill); margin-bottom:10px;
+}
+
+/* ---------- 5. LOGO / MARCA ---------- */
+.logo{
+  font-family: var(--font-display); font-weight:800; font-size:1.15rem;
+  color: var(--color-ink); display:flex; align-items:center; gap:8px;
+}
+.logo-marca{
+  height: 75px;
+  position: relative;
+  margin: -50px;
+}
+
+/* ---------- 6. BOTONES ---------- */
+button{ cursor:pointer; border:none; background:none; }
+.btn{
+  font-family: var(--font-display); font-weight:600; font-size:1rem;
+  padding: 15px 22px; border-radius: var(--radius-pill);
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  transition: transform var(--speed) var(--ease), box-shadow var(--speed) var(--ease), opacity var(--speed) var(--ease);
+  width:100%;
+}
+.btn:active{ transform: translateY(2px); }
+.btn-primary{
+  background: var(--color-primary); color:#fff;
+  box-shadow: 0 4px 0 var(--color-primary-dark);
+}
+.btn-primary:active{ box-shadow: 0 2px 0 var(--color-primary-dark); }
+.btn-secondary{
+  background: var(--color-surface); color: var(--color-ink);
+  border: 2px solid var(--color-border);
+}
+.btn-secondary:active{ background: var(--color-surface-soft); }
+.btn-ghost{
+  background:transparent; color: var(--color-ink-soft); text-decoration: underline;
+  width:auto; padding: 8px;
+}
+.btn-danger-texto{ color: var(--color-danger); background:transparent; width:auto; text-decoration:underline; padding:8px; font-family:var(--font-body); font-weight:600; }
+.btn[disabled]{ opacity:.5; cursor:not-allowed; }
+.btn-sm{ padding: 10px 16px; font-size:.85rem; width:auto; }
+
+.contenedor-botones{ display:flex; flex-direction:column; gap:12px; margin-top:28px; }
+
+/* ---------- 7. FORMULARIOS ---------- */
+.campo-form{ margin-bottom:18px; }
+.campo-form label{
+  display:block; font-weight:600; font-size:.85rem; color: var(--color-ink);
+  margin-bottom:6px;
+}
+.campo-form input[type="text"],
+.campo-form input[type="email"],
+.campo-form input[type="password"],
+.campo-form input[type="number"],
+.campo-form input[type="date"],
+.campo-form input[type="time"]{
+  width:100%; padding: 14px 16px; border-radius: var(--radius-md);
+  border: 2px solid var(--color-border); background: var(--color-surface);
+  font-family: var(--font-body); font-size:1rem; color: var(--color-ink);
+  transition: border-color var(--speed) var(--ease), box-shadow var(--speed) var(--ease);
+}
+.campo-form input::placeholder{ color: var(--color-ink-faint); }
+.campo-form input:focus{
+  outline:none; border-color: var(--color-primary);
+  box-shadow: 0 0 0 4px var(--color-primary-soft);
+}
+.campo-form input.campo-error{ border-color: var(--color-danger); }
+.campo-form .mensaje-error{
+  color: var(--color-danger); font-size:.78rem; margin-top:6px; font-weight:600; display:none;
+}
+.campo-form.con-error .mensaje-error{ display:block; }
+
+fieldset legend{ display:none; } /* la legend duplica el h1 de pantalla; se oculta visualmente pero permanece accesible */
+.visually-hidden{
+  position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
+}
+fieldset legend.visually-hidden{ display:block; }
+
+.input-prefix-container{
+  display:flex; align-items:stretch; border:2px solid var(--color-border);
+  border-radius: var(--radius-md); overflow:hidden; background:var(--color-surface);
+  transition: border-color var(--speed) var(--ease), box-shadow var(--speed) var(--ease);
+}
+.input-prefix-container:focus-within{ border-color: var(--color-primary); box-shadow: 0 0 0 4px var(--color-primary-soft); }
+.input-prefix-container .prefix{
+  background: var(--color-surface-soft); color: var(--color-primary-dark);
+  font-family: var(--font-mono); font-weight:700; padding:14px 12px; display:flex; align-items:center;
+}
+.input-prefix-container input{
+  border:none !important; box-shadow:none !important; flex:1; font-family: var(--font-mono);
+  letter-spacing:.08em;
+}
+
+.pie-login{ margin-top:24px; text-align:center; font-size:.88rem; color: var(--color-ink-soft); }
+.pie-login a{ color: var(--color-primary-dark); font-weight:700; text-decoration:none; }
+.pie-login a:hover{ text-decoration:underline; }
+
+/* ---------- 8. OTP / PIN ---------- */
+.otp-container, .pin-4-container{
+  display:flex; gap:10px; justify-content:center; margin: 28px 0 20px;
+}
+.otp-input, .pin-box{
+  width:46px; height:56px; text-align:center; font-family: var(--font-mono);
+  font-size:1.4rem; font-weight:700; border-radius: var(--radius-sm);
+  border:2px solid var(--color-border); color: var(--color-ink);
+  transition: border-color var(--speed) var(--ease), box-shadow var(--speed) var(--ease);
+}
+.otp-input:focus, .pin-box:focus{
+  outline:none; border-color: var(--color-primary); box-shadow: 0 0 0 4px var(--color-primary-soft);
+}
+.otp-input.lleno, .pin-box.lleno{ border-color: var(--color-primary); background: var(--color-primary-soft); }
+#pantalla-verificacion-otp, #pantalla-espera-aprobacion{ text-align:center; }
+#pantalla-verificacion-otp a{ color: var(--color-primary-dark); font-weight:700; text-decoration:none; }
+
+/* ---------- 9. ESPERA DE APROBACIÓN ---------- */
+.estado-espera{
+  margin-top:22px; display:inline-flex; align-items:center; gap:8px;
+  background: var(--color-primary-soft); color: var(--color-primary-dark);
+  font-weight:700; padding:10px 18px; border-radius: var(--radius-pill);
+}
+.estado-espera .punto-latido{
+  width:8px; height:8px; border-radius:50%; background: var(--color-primary-dark);
+  animation: latido 1.2s ease-in-out infinite;
+}
+@keyframes latido{ 0%,100%{ opacity:.3; transform:scale(.8); } 50%{ opacity:1; transform:scale(1.1); } }
+
+/* ---------- 10. DIALOG / MODAL ---------- */
+dialog{
+  border:none; border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  padding: 26px 24px calc(24px + env(safe-area-inset-bottom));
+  width:100%; max-width: var(--app-max-width); margin: auto auto 0;
+  box-shadow: var(--shadow-lg); background: var(--color-surface);
+}
+dialog::backdrop{ background: rgba(16,38,34,.45); backdrop-filter: blur(2px); }
+dialog[open]{ animation: modal-in var(--speed) var(--ease); }
+@keyframes modal-in{ from{ transform: translateY(24px); opacity:0; } to{ transform: translateY(0); opacity:1; } }
+dialog h2{ margin-bottom:8px; }
+dialog p{ margin-bottom:18px; }
+dialog .dialog-actions{ display:flex; gap:10px; margin-top:20px; }
+dialog .dialog-actions .btn{ flex:1; }
+.dialog-header{ text-align:center; margin-bottom:6px; }
+.dialog-emoji{ font-size:2.2rem; display:block; margin-bottom:6px; }
+
+@media (min-width:560px){
+  dialog{ border-radius: var(--radius-lg); margin:auto; }
+}
+
+/* ---------- 11. SELECCIÓN CREAR/UNIRSE FAMILIA ---------- */
+#pantalla-opcion-familia .contenedor-botones{ margin-top:32px; }
+
+/* ---------- 12. LOGIN POR PERFILES ---------- */
+#paso-2{ display:none; }
+#paso-2.activo{ display:block; }
+#paso-1.oculto{ display:none; }
+.members-grid{
+  display:grid; grid-template-columns: repeat(3, 1fr); gap:16px; margin: 28px 0;
+}
+.perfil-card{
+  background: var(--color-surface); border-radius: var(--radius-md);
+  padding: 16px 8px; text-align:center; box-shadow: var(--shadow-sm);
+  border: 2px solid var(--color-border); transition: transform var(--speed) var(--ease), border-color var(--speed) var(--ease);
+}
+.perfil-card:hover, .perfil-card:focus-visible{ transform: translateY(-3px); border-color: var(--color-primary); }
+.avatar{
+  width:56px; height:56px; border-radius:50%; margin:0 auto 8px; display:flex;
+  align-items:center; justify-content:center; color:#fff; font-family: var(--font-display);
+  font-weight:700; font-size:1.1rem;
+}
+.perfil-card .nombre-perfil{ font-weight:700; font-size:.85rem; color: var(--color-ink); display:block; }
+.perfil-card .rol-perfil{ font-size:.7rem; color: var(--color-ink-faint); }
+
+/* ---------- 13. HEADER DE DASHBOARD ---------- */
+/* ---------- 13. HEADER DE DASHBOARD ---------- */
+header{
+  position: sticky; top:0; z-index:5; background: rgba(255,255,255,.95);
+  backdrop-filter: blur(8px); padding: 14px 20px; border-bottom:1px solid var(--color-border);
+  width: 100%;
+}
+.header-contenido{ 
+  display: flex; 
+  align-items: center; 
+  gap: 12px; 
+  max-width: var(--app-max-width);
+  margin: 0 auto;
+}
+.header-contenido h1{ 
+  font-size: 1.1rem; 
+  flex: 1; 
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.header-contenido .logo-marca{
+  height: 32px;
+  width: auto;
+  margin: 0;
+  object-fit: contain;
+}
+.header-contenido img, .header-contenido .avatar-mini{
+  width: 36px; height: 36px; border-radius: 50%; object-fit: cover;
+  flex-shrink: 0;
+}
+.header-contenido p{ font-weight: 700; color: var(--color-ink); font-size: .85rem; white-space: nowrap; }
+
+/* ---------- 14. TAREAS ---------- */
+.contador-tareas{
+  font-family: var(--font-mono); font-weight:700; color: var(--color-primary-dark);
+  background: var(--color-primary-soft); display:inline-block; padding:3px 12px;
+  border-radius: var(--radius-pill); margin: 8px 0 20px; font-size:.85rem;
+}
+.tareas{ display:flex; flex-direction:column; gap:14px; }
+.tarjeta-tarea{
+  background: var(--color-surface); border-radius: var(--radius-md);
+  padding:16px; box-shadow: var(--shadow-sm); border: 1px solid var(--color-border); border-left: 5px solid var(--color-border);
+}
+.tarjeta-tarea[data-estancia="salon"]{ border-left-color: var(--color-salon); }
+.tarjeta-tarea[data-estancia="cocina"]{ border-left-color: var(--color-cocina); }
+.tarjeta-tarea[data-estancia="bano"]{ border-left-color: var(--color-bano); }
+.tarjeta-tarea[data-estancia="habitacion"]{ border-left-color: var(--color-habitacion); }
+
+.tarea-cabecera{ display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+.tarea-cabecera strong{ font-family: var(--font-display); font-size:1rem; }
+.tarea-cabecera .separador{ color: var(--color-ink-faint); }
+.tarea-cabecera .fecha{ font-size:.78rem; color: var(--color-ink-soft); }
+
+.estado{
+  font-size:.72rem; font-weight:700; padding:4px 10px; border-radius: var(--radius-pill);
+  margin-left:auto;
+}
+.estado-revision{ background: var(--color-warning-soft); color:#9A5B10; }
+.estado-aprobada{ background: var(--color-success-soft); color:#116B44; }
+.estado-pendiente{ background: var(--color-surface-soft); color: var(--color-ink-soft); }
+.estado-rechazada{ background: var(--color-danger-soft); color:#9A2A2E; }
+
+.tarea-detalles{ display:flex; flex-wrap:wrap; gap:14px; }
+.dato{ display:flex; align-items:center; gap:6px; font-size:.82rem; font-weight:600; color: var(--color-ink-soft); }
+.dato .figura{ font-size:.9rem; line-height:1; }
+
+.figura.cuadrado{ color: var(--color-ink-faint); }
+[data-estancia="salon"] .figura.cuadrado{ color: var(--color-salon); }
+[data-estancia="cocina"] .figura.cuadrado{ color: var(--color-cocina); }
+[data-estancia="bano"] .figura.cuadrado{ color: var(--color-bano); }
+[data-estancia="habitacion"] .figura.cuadrado{ color: var(--color-habitacion); }
+.figura.circulo{ color: var(--color-primary); }
+.figura.triangulo{ color: var(--color-puntos-ink); }
+.dato:has(.circulo){ font-family: var(--font-mono); }
+
+.leyenda-estancias{ display:flex; flex-wrap:wrap; gap:10px; margin-bottom:20px; }
+.chip-estancia{
+  font-size:.72rem; font-weight:700; padding:5px 10px; border-radius: var(--radius-pill);
+  display:inline-flex; align-items:center; gap:5px;
+}
+.chip-estancia[data-estancia="salon"]{ background: var(--color-salon-soft); color: #B23F2E; }
+.chip-estancia[data-estancia="cocina"]{ background: var(--color-cocina-soft); color: #B25E10; }
+.chip-estancia[data-estancia="bano"]{ background: var(--color-bano-soft); color: #1E6699; }
+.chip-estancia[data-estancia="habitacion"]{ background: var(--color-habitacion-soft); color: #5B3FBF; }
+
+/* ---------- 15. MI BANCO ---------- */
+.resumen-saldos{
+  display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:28px;
+}
+.columna-saldo{
+  background: var(--color-surface); border-radius: var(--radius-md); padding:18px;
+  box-shadow: var(--shadow-sm); border: 1px solid var(--color-border); text-align:center;
+}
+.columna-saldo .etiqueta{
+  display:block; font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em;
+  color: var(--color-ink-faint); margin-bottom:6px;
+}
+.columna-saldo .valor{
+  font-family: var(--font-mono); font-weight:700; font-size:1.5rem; color: var(--color-ink);
+}
+.columna-saldo:first-child .valor{ color: var(--color-primary-dark); }
+.columna-saldo:last-child .valor{ color: var(--color-puntos-ink); }
+
+main h2{ margin-bottom:14px; margin-top:6px; }
+#pantalla-banco-hijo ul{ display:flex; flex-direction:column; gap:10px; margin-bottom:28px; }
+#pantalla-banco-hijo ul li{
+  background: var(--color-surface); border-radius: var(--radius-sm); padding:12px 14px;
+  display:flex; justify-content:space-between; align-items:center; box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border); font-size:.88rem; font-weight:600;
+}
+#pantalla-banco-hijo ul li .importe{ font-family: var(--font-mono); font-weight:700; }
+#pantalla-banco-hijo ul li .importe.positivo{ color: var(--color-success); }
+#pantalla-banco-hijo ul li .importe.negativo{ color: var(--color-danger); }
+
+#pantalla-banco-hijo ol{ display:flex; flex-direction:column; gap:10px; }
+#pantalla-banco-hijo ol li{
+  background: var(--color-surface); border-radius: var(--radius-sm); padding:12px 14px;
+  display:flex; align-items:center; gap:12px; box-shadow: var(--shadow-sm); border: 1px solid var(--color-border);
+}
+#pantalla-banco-hijo ol li .puesto{
+  width:26px; height:26px; border-radius:50%; background: var(--color-surface-soft);
+  display:flex; align-items:center; justify-content:center; font-weight:700; font-size:.8rem;
+  flex-shrink:0; color: var(--color-ink-soft);
+}
+#pantalla-banco-hijo ol li:nth-child(1) .puesto{ background: #FFE9A8; color:#8A6300; }
+#pantalla-banco-hijo ol li:nth-child(2) .puesto{ background: #E4E9EE; color:#5C6672; }
+#pantalla-banco-hijo ol li:nth-child(3) .puesto{ background: #F3DBC7; color:#8A4F1F; }
+#pantalla-banco-hijo ol li .nombre-ranking{ font-weight:700; flex:1; font-size:.88rem; }
+#pantalla-banco-hijo ol li .puntos-ranking{ font-family: var(--font-mono); font-weight:700; color: var(--color-puntos-ink); font-size:.85rem; }
+
+/* ---------- 16. OBJETIVOS ---------- */
+.cabecera-objetivos{ display:flex; align-items:center; gap:10px; margin-bottom:20px; flex-wrap:wrap; }
+.cabecera-objetivos h2{ flex:1; margin:0; }
+.contador-objetivos{
+  font-family: var(--font-mono); font-weight:700; color: var(--color-ink-soft);
+  background: var(--color-surface-soft); padding:3px 10px; border-radius: var(--radius-pill); font-size:.8rem;
+}
+.cabecera-objetivos button{
+  background: var(--color-primary); color:#fff; font-family: var(--font-display); font-weight:600;
+  font-size:.78rem; padding:9px 14px; border-radius: var(--radius-pill); box-shadow: 0 3px 0 var(--color-primary-dark);
+}
+.cabecera-objetivos button:active{ transform: translateY(2px); box-shadow: 0 1px 0 var(--color-primary-dark); }
+
+.objetives{ display:flex; flex-direction:column; gap:16px; }
+.objetives .objetivo-card{
+  background: var(--color-surface); border-radius: var(--radius-md); padding:18px;
+  box-shadow: var(--shadow-sm); border: 1px solid var(--color-border);
+}
+.name-price{ display:flex; align-items:center; gap:8px; margin-bottom:12px; }
+.name-price h3{ flex:1; }
+.name-price .separador{ color: var(--color-ink-faint); }
+.name-price .precio{ font-family: var(--font-mono); font-weight:700; color: var(--color-ink-soft); font-size:.85rem; }
+
+progress{
+  -webkit-appearance:none; appearance:none; width:100%; height:12px; border-radius: var(--radius-pill);
+  border:none; overflow:hidden; background: var(--color-surface-soft);
+}
+progress::-webkit-progress-bar{ background: var(--color-surface-soft); border-radius: var(--radius-pill); }
+progress::-webkit-progress-value{ background: linear-gradient(90deg, var(--color-primary), var(--color-primary-dark)); border-radius: var(--radius-pill); transition: width .5s var(--ease); }
+progress::-moz-progress-bar{ background: var(--color-primary); border-radius: var(--radius-pill); }
+.objetivo-progreso-texto{ display:flex; justify-content:space-between; margin-top:8px; font-size:.75rem; font-weight:700; color: var(--color-ink-soft); font-family: var(--font-mono); }
+
+/* ---------- 17. NAVEGACIÓN INFERIOR ---------- */
+footer{
+  position: fixed; bottom:0; left:50%; transform: translateX(-50%);
+  width:100%; max-width: var(--app-max-width); background: var(--color-surface);
+  border-top:1px solid var(--color-border); padding: 10px 8px calc(10px + env(safe-area-inset-bottom));
+  box-shadow: 0 -6px 20px rgba(22,52,47,.06); z-index:6;
+}
+footer nav{ display:flex; justify-content:space-around; }
+footer nav a{
+  display:flex; flex-direction:column; align-items:center; gap:4px; text-decoration:none;
+  font-size:.68rem; font-weight:700; color: var(--color-ink-faint); padding:6px 14px; border-radius: var(--radius-md);
+  transition: color var(--speed) var(--ease), background var(--speed) var(--ease);
+}
+footer nav a::before{ content:'●'; font-size:.9rem; }
+footer nav a.activo{ color: var(--color-primary-dark); background: var(--color-primary-soft); }
+
+/* ---------- 18. TOASTS ---------- */
+#toast-region{
+  position: fixed; bottom: 96px; left:50%; transform: translateX(-50%);
+  width: calc(100% - 48px); max-width: calc(var(--app-max-width) - 48px);
+  display:flex; flex-direction:column; gap:8px; z-index:20; pointer-events:none;
+}
+.toast{
+  background: var(--color-ink); color:#fff; padding: 13px 18px; border-radius: var(--radius-md);
+  font-size:.85rem; font-weight:600; box-shadow: var(--shadow-md);
+  animation: toast-in var(--speed) var(--ease);
+  display:flex; align-items:center; gap:8px;
+}
+.toast.exito{ background: var(--color-success); }
+.toast.error{ background: var(--color-danger); }
+@keyframes toast-in{ from{ opacity:0; transform: translateY(10px); } to{ opacity:1; transform: translateY(0); } }
+.toast.saliendo{ animation: toast-out var(--speed) var(--ease) forwards; }
+@keyframes toast-out{ to{ opacity:0; transform: translateY(10px); } }
+
+/* ---------- 19. PANTALLA INICIO ---------- */
+#pantalla-inicio .pantalla-contenido{
+  min-height:100vh; display:flex; flex-direction:column; justify-content:center; text-align:center; background-color: white;
+}
+#pantalla-inicio .marca-inicio{
+  width:72px; height:72px; border-radius:22px; background: var(--color-primary);
+  color:#ffffff; font-family:var(--font-display); font-weight:800; font-size:1.8rem;
+  display:flex; align-items:center; justify-content:center; margin:0 auto 20px;
+}
+#pantalla-inicio h1{ margin-bottom:8px; }
+
+/* ---------- 20. CÓDIGO DE FAMILIA (compartir) ---------- */
+.codigo-generado{
+  font-family: var(--font-mono); font-weight:700; font-size:1.6rem; letter-spacing:.06em;
+  text-align:center; color: var(--color-primary-dark); background: var(--color-primary-soft);
+  padding:16px; border-radius: var(--radius-md); margin: 18px 0; border:2px dashed var(--color-primary);
+}
+.codigo-familia-mini{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  background: var(--color-primary-soft); border-radius: var(--radius-md); padding:12px 16px; margin-bottom:20px;
+}
+.codigo-familia-mini .texto-codigo{ font-family: var(--font-mono); font-weight:700; color: var(--color-primary-dark); font-size:1.05rem; }
+.codigo-familia-mini .etiqueta-codigo{ font-size:.72rem; font-weight:700; color: var(--color-ink-soft); text-transform:uppercase; letter-spacing:.04em; display:block; }
+.btn-copiar{
+  background: var(--color-surface); border:2px solid var(--color-primary); color: var(--color-primary-dark);
+  font-weight:700; font-size:.78rem; padding:8px 12px; border-radius: var(--radius-pill); flex-shrink:0;
+}
+.btn-copiar:active{ transform: scale(.95); }
+
+/* ---------- 21. PANEL DE PADRES ---------- */
+.resumen-familia-titulo{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.tarjetas-hijos{ display:flex; flex-direction:column; gap:12px; margin-bottom:8px; }
+.tarjeta-hijo{
+  display:flex; align-items:center; gap:12px; background: var(--color-surface);
+  border:1px solid var(--color-border); border-radius: var(--radius-md); padding:14px; box-shadow: var(--shadow-sm);
+}
+.tarjeta-hijo .avatar{ width:44px; height:44px; font-size:1rem; }
+.tarjeta-hijo .info-hijo{ flex:1; min-width:0; }
+.tarjeta-hijo .info-hijo strong{ display:block; font-size:.92rem; }
+.tarjeta-hijo .cifras-hijo{ display:flex; gap:12px; margin-top:2px; }
+.tarjeta-hijo .cifras-hijo span{ font-family: var(--font-mono); font-size:.78rem; font-weight:700; color: var(--color-ink-soft); }
+
+.banner-aviso{
+  display:flex; align-items:center; gap:10px; background: var(--color-warning-soft); color:#9A5B10;
+  border-radius: var(--radius-md); padding:12px 16px; font-size:.85rem; font-weight:700; margin-bottom:18px;
+  text-decoration:none;
+}
+.banner-aviso .contador-aviso{
+  background:#9A5B10; color:#fff; border-radius: var(--radius-pill); font-size:.72rem; padding:2px 9px; font-family: var(--font-mono);
+}
+
+/* Pestañas de filtro (tareas del padre) */
+.filtro-tabs{ display:flex; gap:8px; margin-bottom:18px; overflow-x:auto; padding-bottom:2px; }
+.filtro-tab{
+  font-family: var(--font-display); font-weight:600; font-size:.82rem; padding:8px 16px;
+  border-radius: var(--radius-pill); background: var(--color-surface-soft); color: var(--color-ink-soft);
+  white-space:nowrap; border: 2px solid transparent;
+}
+.filtro-tab.activo{ background: var(--color-primary-soft); color: var(--color-primary-dark); border-color: var(--color-primary); }
+
+/* Botón flotante "+" para nueva tarea */
+.btn-flotante{
+  position: fixed; bottom: 96px; right: max(20px, calc((100vw - var(--app-max-width)) / 2 + 20px));
+  width:56px; height:56px; border-radius:50%; background: var(--color-primary); color:#fff;
+  font-size:1.6rem; display:flex; align-items:center; justify-content:center; box-shadow: var(--shadow-md);
+  z-index:8; line-height:1;
+}
+.btn-flotante:active{ transform: scale(.94); }
+
+/* Tarjeta de tarea del padre: añade nombre de hijo + acciones aprobar/rechazar */
+.tarjeta-tarea .tarea-hijo{
+  font-size:.75rem; font-weight:700; color: var(--color-ink-faint); margin-bottom:4px; display:block;
+}
+.acciones-tarea{ display:flex; gap:8px; margin-top:12px; }
+.acciones-tarea .btn{ width:auto; flex:1; padding:10px 14px; font-size:.85rem; }
+.btn-aprobar{ background: var(--color-success); color:#fff; box-shadow: 0 3px 0 #15804F; }
+.btn-aprobar:active{ box-shadow: 0 1px 0 #15804F; }
+.btn-rechazar{ background: var(--color-danger-soft); color: var(--color-danger); }
+
+/* Acción del hijo sobre su propia tarea */
+.tareas .tarjeta-tarea .btn-accion-hijo{
+  margin-top:12px; width:auto; padding:9px 16px; font-size:.82rem;
+  background: var(--color-primary-soft); color: var(--color-primary-dark); border-radius: var(--radius-pill); font-weight:700;
+}
+.tareas .tarjeta-tarea .btn-accion-hijo:active{ transform: scale(.96); }
+
+/* Lista de aprobaciones de perfiles de hijos */
+.lista-aprobaciones{ display:flex; flex-direction:column; gap:12px; }
+.tarjeta-aprobacion{
+  background: var(--color-surface); border:1px solid var(--color-border); border-radius: var(--radius-md);
+  padding:14px; box-shadow: var(--shadow-sm);
+}
+.tarjeta-aprobacion .fila-aprobacion{ display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+.tarjeta-aprobacion .info-hijo strong{ display:block; font-size:.92rem; }
+.tarjeta-aprobacion .info-hijo span{ font-size:.75rem; color: var(--color-ink-faint); }
+
+/* Estados vacíos */
+.estado-vacio{
+  text-align:center; padding: 36px 16px; color: var(--color-ink-faint);
+}
+.estado-vacio .emoji-vacio{ font-size:2rem; display:block; margin-bottom:10px; }
+.estado-vacio p{ color: var(--color-ink-faint); font-size:.85rem; }
+
+/* Pantalla de carga inicial (mientras conecta con Firebase) */
+#pantalla-cargando{
+  position:fixed; inset:0; background:#fff; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; z-index:50; gap:14px;
+}
+#pantalla-cargando .spinner{
+  width:36px; height:36px; border-radius:50%; border:4px solid var(--color-primary-soft);
+  border-top-color: var(--color-primary); animation: girar 0.8s linear infinite;
+}
+@keyframes girar{ to{ transform: rotate(360deg); } }
+#pantalla-cargando p{ font-family: var(--font-display); font-weight:600; color: var(--color-ink-soft); }
+
+/* Formulario dentro del modal "Nueva tarea" */
+#modal-nueva-tarea select{
+  width:100%; padding:14px 16px; border-radius: var(--radius-md); border:2px solid var(--color-border);
+  background: var(--color-surface); font-family: var(--font-body); font-size:1rem; color: var(--color-ink);
+}
+#modal-nueva-tarea select:focus{ outline:none; border-color: var(--color-primary); box-shadow: 0 0 0 4px var(--color-primary-soft); }
+.fila-doble{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+#pantalla-registro-adulto .pantalla-contenido p {
+  margin-bottom: 15px;
+}
+
+.logofn {
+  display: flex;
+  align-items: center;
+}
+
+main {
+  padding-bottom: 140px;
+}
+
+.fecha-hora:first-child {
+  gap: 6px;
+}
+
+.separador-fh {
+  gap: 12px;
+}
+
+.dowload-works {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  text-align: center;
+}
+
+.dowload-works h2 {
+  margin-right: auto;
+}
+
+.dowload-works button {
+  background-color: var(--color-primary);
+  color: white;
+  height: 40px;
+  border-radius: 20px;
+  box-shadow: 0 4px 0 var(--color-primary-dark);
+  font-weight: bold;
+}
+
+#modal-transferencia select {
+  border-radius: 12px;
+}
+
+.chip-tipo:first-child{
+  background-color: var(--color-primary);
+  padding: 8px;
+  border-radius: 8px;
+  box-shadow: 0 4px 0 var(--color-primary-dark);
+  font-weight: bold;
+  color: white;
+  display: flex;
+  align-items: center;
+  margin-right: 10px;
+}
+
+.chip-tipo:nth-child(2) {
+  background-color: white;
+  background: var(--color-surface); color: var(--color-ink);
+  border: 2px solid var(--color-border);
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: bold;
+  color: black;
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  box-shadow: 0 4px 0 var(--color-primary-soft);
+}
+
+#tipo-transferencia {
+  display: flex;
+  flex-direction: row;
+}
+
+/* ---------- 22. MOSTRAR/OCULTAR CONTRASEÑA ---------- */
+.input-con-ojo{
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+.input-con-ojo input{ padding-right: 46px !important; }
+.btn-mostrar-pass{
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  font-size: 1.1rem;
+  padding: 8px;
+  cursor: pointer;
+  line-height: 1;
+  opacity: .7;
+  transition: opacity var(--speed) var(--ease);
+}
+.btn-mostrar-pass:hover{ opacity: 1; }
+.btn-mostrar-pass.activo{ opacity: 1; }
+
+.btn-mostrar-pin-boxes{
+  display: block;
+  margin: 0 auto 10px;
+  background: transparent;
+  border: none;
+  color: var(--color-primary-dark);
+  font-weight: 700;
+  font-size: .82rem;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
