@@ -59,6 +59,15 @@
 /* ---------- 2. RESET ---------- */
 *, *::before, *::after{ box-sizing: border-box; }
 html{ -webkit-text-size-adjust: 100%; }
+
+/* Quita el recuadro azul/gris ("tap highlight") que Android pinta al
+   tocar cualquier elemento clicable. Sin esto, se ve sobresaliendo por
+   las esquinas de cualquier cosa con border-radius (botones, avatares,
+   chips, etc.), porque ese resaltado siempre es rectangular. */
+*{
+  -webkit-tap-highlight-color: rgba(0,0,0,0);
+}
+
 body{
   margin:0;
   font-family: var(--font-body);
@@ -250,6 +259,28 @@ fieldset legend.visually-hidden{ display:block; }
 .pie-login{ margin-top:24px; text-align:center; font-size:.88rem; color: var(--color-ink-soft); }
 .pie-login a{ color: var(--color-primary-dark); font-weight:700; text-decoration:none; }
 .pie-login a:hover{ text-decoration:underline; }
+
+/* ---------- 7.2 BOTÓN "CONTINUAR CON GOOGLE" ---------- */
+.btn-google{
+  width:100%; display:flex; align-items:center; justify-content:center; gap:10px;
+  padding:13px 20px; border-radius: var(--radius-pill); background:#fff;
+  border:2px solid var(--color-border); color: var(--color-ink);
+  font-family: var(--font-display); font-weight:600; font-size:.95rem;
+  transition: transform var(--speed) var(--ease), border-color var(--speed) var(--ease), box-shadow var(--speed) var(--ease);
+}
+.btn-google:hover{ border-color:#4285F4; box-shadow:0 2px 8px rgba(66,133,244,.15); }
+.btn-google:active{ transform: translateY(1px); }
+.btn-google .icono-google{ flex-shrink:0; }
+.btn-google[disabled]{ opacity:.5; cursor:not-allowed; }
+
+.separador-o{
+  display:flex; align-items:center; gap:10px; margin:18px 0;
+  color: var(--color-ink-faint); font-size:.78rem; font-weight:700;
+  text-transform:uppercase; letter-spacing:.04em;
+}
+.separador-o::before, .separador-o::after{
+  content:''; flex:1; height:1px; background: var(--color-border);
+}
 
 /* ---------- 7.1 SELECTOR DE AVATAR ANIMAL (registro de hijos) ---------- */
 .selector-avatar-animal{
@@ -636,6 +667,18 @@ footer nav a.activo{ color: var(--color-primary-dark); background: var(--color-p
 .btn-ajuste-saldo.restar{ background: var(--color-danger-soft); color:#9A2A2E; }
 .btn-ajuste-saldo:active{ transform: scale(.9); }
 
+/* Botón único (emoji) para quitar a alguien de la familia, usado en la
+   lista "Tu familia" de la pantalla de Aprobaciones. */
+.btn-quitar-miembro{
+  width:34px; height:34px; border-radius:50%; font-size:1rem;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  background: var(--color-danger-soft); color:#9A2A2E;
+  transition: transform var(--speed) var(--ease), background var(--speed) var(--ease);
+}
+.btn-quitar-miembro:hover{ background: var(--color-danger); color:#fff; }
+.btn-quitar-miembro:active{ transform: scale(.9); }
+.btn-quitar-miembro[disabled]{ opacity:.5; }
+
 .banner-aviso{
   display:flex; align-items:center; gap:10px; background: var(--color-warning-soft); color:#9A5B10;
   border-radius: var(--radius-md); padding:12px 16px; font-size:.85rem; font-weight:700; margin-bottom:18px;
@@ -837,3 +880,15 @@ footer nav a.activo{ color: var(--color-primary-dark); background: var(--color-p
 .avatar-logo-adulto-grande{
   width:96px; height:96px; font-size:2.4rem; cursor:default;
 }
+
+.lista-movimientos-padre{ display:flex; flex-direction:column; gap:10px; margin-bottom:8px; }
+.lista-movimientos-padre li{
+  background: var(--color-surface); border-radius: var(--radius-sm); padding:12px 14px;
+  display:flex; justify-content:space-between; align-items:center; gap:10px;
+  box-shadow: var(--shadow-sm); border: 1px solid var(--color-border);
+  font-size:.85rem; font-weight:600;
+}
+.lista-movimientos-padre li .texto-mov{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+.lista-movimientos-padre li .texto-mov strong{ font-size:.85rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.lista-movimientos-padre li .fecha-mov{ font-size:.7rem; color: var(--color-ink-faint); font-weight:600; }
+.lista-movimientos-padre li .importe{ font-family: var(--font-mono); font-weight:700; color: var(--color-success); flex-shrink:0; }

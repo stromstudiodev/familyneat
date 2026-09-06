@@ -24,7 +24,7 @@
     <!-- ==================== 1. PANTALLA INICIO / BIENVENIDA ==================== -->
     <section id="pantalla-inicio" class="pantalla" data-screen>
         <div class="pantalla-contenido">
-            <img src="logo.png">
+            <img src="logo1.png">
             <h1>Bienvenido a Family Neat</h1>
             <p>La organización de las tareas comienza ahora.</p>
 
@@ -47,6 +47,17 @@
             <span class="eyebrow">Padre / Madre</span>
             <h1>Crear perfil de Adulto</h1>
             <p>¡Completa el formulario para que comience la gestión de tu hogar!</p>
+
+            <button class="btn-google" type="button" id="btn-google-registro">
+                <svg class="icono-google" viewBox="0 0 48 48" width="20" height="20" aria-hidden="true">
+                    <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
+                    <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/>
+                    <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/>
+                    <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/>
+                </svg>
+                Continuar con Google
+            </button>
+            <div class="separador-o"><span>o regístrate con email</span></div>
 
             <form id="form-registro-adulto" novalidate>
                 <fieldset>
@@ -89,7 +100,7 @@
 
             <div class="selector-logo-adulto selector-logo-adulto-pantalla">
                 <span class="avatar avatar-logo-adulto-grande" id="avatar-preview-adulto" aria-hidden="true" style="background:#00C9A7">?</span>
-                <button type="button" class="btn btn-secondary" id="btn-cargar-logo-adulto">📷 Subir foto</button>
+                <label class="btn btn-secondary" for="input-logo-adulto" id="btn-cargar-logo-adulto">📷 Subir foto</label>
             </div>
             <input type="file" id="input-logo-adulto" accept="image/*" class="visually-hidden">
 
@@ -168,13 +179,13 @@
         </div>
     </section>
 
-    <!-- ==================== 4. VERIFICACIÓN DE CORREO (OTP) ==================== -->
+    <!-- ==================== 4. VERIFICACIÓN DE CORREO (CÓDIGO) ==================== -->
     <section id="pantalla-verificacion-otp" class="pantalla" data-screen>
         <div class="pantalla-contenido sin-nav">
             <div class="barra-superior"><button class="btn-atras" type="button" data-accion="volver" aria-label="Volver">←</button></div>
-            <div class="logo" style="justify-content:center; margin-bottom:8px;"><img src="logo.png" class="logo-marca"> Family Neat</div>
+            <div class="logo" style="justify-content:center; margin-bottom:8px;"><img src="logo1.png" class="logo-marca"> Family Neat</div>
             <h1 style="margin-top: 15px;">Verifica tu correo</h1>
-            <p>Hemos enviado un código de 6 dígitos a tu email.</p>
+            <p>Hemos enviado un código de 6 dígitos a <strong id="texto-email-otp">tu email</strong>.</p>
 
             <div class="otp-container">
                 <input type="text" maxlength="1" class="otp-input" inputmode="numeric" aria-label="Dígito 1 del código">
@@ -267,7 +278,7 @@
         <div class="pantalla-contenido sin-nav">
             <div class="barra-superior"><button class="btn-atras" type="button" data-accion="volver" aria-label="Volver">←</button></div>
                 <div class="logofn">
-                    <img src="logo.png" style="  width: 50px; height: 50px; border-radius: 50%; object-fit: cover;
+                    <img src="logo1.png" style="  width: 50px; height: 50px; border-radius: 50%; object-fit: cover;
                         flex-shrink: 0;">
                     <h1 id="titulo">Family Neat</h1>
                 </div>
@@ -315,9 +326,22 @@
                     </div>
                 </div>
 
+                <!-- MODO PADRE/MADRE registrado con Google -->
+                <div id="modo-google" style="display:none; margin: 4px 0 4px;">
+                    <button type="button" class="btn-google" id="btn-google-login-modal">
+                        <svg class="icono-google" viewBox="0 0 48 48" width="20" height="20" aria-hidden="true">
+                            <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
+                            <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/>
+                            <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/>
+                            <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/>
+                        </svg>
+                        Continuar con Google
+                    </button>
+                </div>
+
                 <div class="dialog-actions">
                     <button class="btn btn-secondary" type="button" id="btn-cerrar-modal">Cancelar</button>
-                    <button class="btn btn-primary" type="submit">Entrar</button>
+                    <button class="btn btn-primary" type="submit" id="btn-entrar-modal">Entrar</button>
                 </div>
             </form>
         </dialog>
@@ -522,6 +546,12 @@
                 <h2>Tu familia</h2>
             </div>
             <div class="tarjetas-hijos" id="lista-hijos-inicio"></div>
+
+            <!-- NUEVO: Últimos movimientos -->
+            <div class="resumen-familia-titulo" style="margin-top:28px;">
+                    <h2>Últimos movimientos</h2>
+            </div>
+                    <ul class="lista-movimientos-padre" id="lista-movimientos-padre-inicio"></ul>
         </main>
 
         <footer>
@@ -656,6 +686,11 @@
         <main>
             <h2>Solicitudes de acceso</h2>
             <div class="lista-aprobaciones" id="lista-aprobaciones"></div>
+
+            <div class="resumen-familia-titulo" style="margin-top:28px;">
+                <h2>Tu familia</h2>
+            </div>
+            <div class="tarjetas-hijos" id="lista-familia-aprobaciones"></div>
         </main>
 
         <footer>
@@ -690,7 +725,7 @@
             <button type="button" class="opcion-avatar-animal" data-emoji="🦄" aria-label="Unicornio">🦄</button>
         </div>
 
-        <button class="btn btn-secondary" type="button" id="btn-cargar-imagen-menu" style="margin-top:4px;">📷 Cargar imagen</button>
+        <label class="btn btn-secondary" for="input-foto-perfil" id="btn-cargar-imagen-menu" style="margin-top:4px;">📷 Cargar imagen</label>
 
         <div class="dialog-actions">
             <button class="btn-danger-texto" type="button" id="btn-cerrar-sesion-menu">⎋ Cerrar sesión</button>
