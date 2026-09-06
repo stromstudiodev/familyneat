@@ -43,6 +43,10 @@
     rechazada: { texto: '↩️ Rechazada', clase: 'estado-rechazada' },
   };
 
+  function escaparHTML(texto) {
+    return String(texto ?? '').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
   function normalizarCodigo(valor) {
     return (valor || '').toUpperCase().replace('NEAT-', '').replace(/\s/g, '').trim();
   }
@@ -66,6 +70,13 @@
 
   function formatearDinero(valor) {
     return `${Number(valor || 0).toFixed(2).replace('.', ',')} €`;
+  }
+
+  // Las tareas creadas cuando la familia usa "Paga fija" no llevan un
+  // importe propio (van dentro de la paga periódica), así que en vez de
+  // mostrar 0,00€ mostramos la palabra "Paga".
+  function textoDineroTarea(tarea) {
+    return tarea.paga ? 'Paga' : formatearDinero(tarea.dinero);
   }
 
   // Convierte una fecha en formato ISO (yyyy-mm-dd) a algo legible en
@@ -169,6 +180,7 @@
     tareasFamiliaCache: [],       // última foto de tareas (vista del padre) para filtrar sin recargar
     filtroTareasPadre: 'todas',
     hijosFamiliaCache: [],        // última foto de miembros con rol hijo (vista del padre)
+    movimientosFamiliaCache: [],  // última foto de movimientos de toda la familia (vista del padre)
     listenersActivos: [],         // funciones "unsubscribe" de Firestore en curso
   };
 
@@ -181,7 +193,7 @@
      3. NAVEGACIÓN ENTRE PANTALLAS
      ================================================================ */
   const PANTALLAS_DASHBOARD_HIJO = ['pantalla-tareas-hijo', 'pantalla-banco-hijo', 'pantalla-objetivos-hijo'];
-  const PANTALLAS_DASHBOARD_PADRE = ['pantalla-padre-inicio', 'pantalla-padre-tareas', 'pantalla-padre-aprobaciones'];
+  const PANTALLAS_DASHBOARD_PADRE = ['pantalla-padre-inicio', 'pantalla-padre-tareas', 'pantalla-padre-aprobaciones', 'pantalla-padre-ajustes'];
   const PANTALLAS_SIN_ATRAS = ['pantalla-inicio', ...PANTALLAS_DASHBOARD_HIJO, ...PANTALLAS_DASHBOARD_PADRE];
 
   const FORMULARIOS_LIMPIAR_AL_SALIR = {
@@ -245,9 +257,11 @@
   }
 
   function actualizarNavInferior(idPantalla) {
+    // "Aprobar" ya no tiene su propio icono en la barra; cuelga de Ajustes.
+    const idParaNav = idPantalla === 'pantalla-padre-aprobaciones' ? 'pantalla-padre-ajustes' : idPantalla;
     document.querySelectorAll('footer nav a').forEach((enlace) => {
       const objetivo = enlace.getAttribute('href')?.replace('#', '');
-      enlace.classList.toggle('activo', objetivo === idPantalla);
+      enlace.classList.toggle('activo', objetivo === idParaNav);
     });
   }
 
@@ -269,6 +283,7 @@
     ESTADO.miembroActual = null;
     ESTADO.tareasFamiliaCache = [];
     ESTADO.hijosFamiliaCache = [];
+    ESTADO.movimientosFamiliaCache = [];
     mostrarToast('Sesión cerrada', 'info');
     irAPantalla('pantalla-inicio');
   }
@@ -358,11 +373,12 @@
       creadaEn: firebase.firestore.FieldValue.serverTimestamp(),
     });
 
-    const secretoHash = await hashTexto(datosAdulto.password);
+    const datosAuth = { authProvider: 'password', secretoHash: await hashTexto(datosAdulto.password) };
+
     const miembroRef = await familiaRef.collection('miembros').add({
       nombre: datosAdulto.nombre,
       rol: 'padre',
-      secretoHash,
+      ...datosAuth,
       aprobado: true,
       avatarColor: colorAleatorio(),
       ...(datosAdulto.avatarImagen ? { avatarImagen: datosAdulto.avatarImagen } : {}),
@@ -381,12 +397,12 @@
     if (!familia) return null;
 
     const datosAdulto = ESTADO.registroTemporalAdulto;
-    const secretoHash = await hashTexto(datosAdulto.password);
+    const datosAuth = { authProvider: 'password', secretoHash: await hashTexto(datosAdulto.password) };
 
     const miembroRef = await db.collection('familias').doc(familia.id).collection('miembros').add({
       nombre: datosAdulto.nombre,
       rol: 'padre',
-      secretoHash,
+      ...datosAuth,
       aprobado: false,
       avatarColor: colorAleatorio(),
       ...(datosAdulto.avatarImagen ? { avatarImagen: datosAdulto.avatarImagen } : {}),
@@ -517,6 +533,7 @@
       miembroId: tarea.miembroId,
       texto: tarea.titulo,
       importe: tarea.dinero || 0,
+      puntos: tarea.puntos || 0,
       creadoEn: firebase.firestore.FieldValue.serverTimestamp(),
     });
     await lote.commit();
@@ -527,6 +544,14 @@
   }
 
   async function rechazarHijo(miembroId) {
+    await refFamilia().collection('miembros').doc(miembroId).delete();
+  }
+
+  // Quita a un miembro ya aprobado (padre o hijo) de la familia, desde la
+  // lista "Tu familia" de la pantalla de Aprobaciones. Es una acción
+  // destructiva: borra el documento del miembro (tareas, saldo, objetivos
+  // asociados a su miembroId dejan de estar vinculados a ningún perfil).
+  async function eliminarMiembroDeFamilia(miembroId) {
     await refFamilia().collection('miembros').doc(miembroId).delete();
   }
 
@@ -541,23 +566,25 @@
   }
 
   // Ajuste manual de saldo hecho por un padre (botones +/- en la tarjeta
-  // del hijo). Queda registrado como un movimiento normal.
+  // del hijo). Queda registrado como un movimiento normal, tanto si es
+  // dinero como si son Neats (puntos).
   async function ajustarSaldoHijo(miembroId, tipo, signo, importe) {
     const campoSaldo = tipo === 'dinero' ? 'saldoDinero' : 'saldoPuntos';
     const cantidad = signo * Math.abs(importe);
     const miembroRef = refFamilia().collection('miembros').doc(miembroId);
+    const movRef = refFamilia().collection('movimientos').doc();
+
     const lote = db.batch();
     lote.update(miembroRef, { [campoSaldo]: firebase.firestore.FieldValue.increment(cantidad) });
-
-    if (tipo === 'dinero') {
-      const movRef = refFamilia().collection('movimientos').doc();
-      lote.set(movRef, {
-        miembroId,
-        texto: signo > 0 ? 'Ajuste manual (bonus)' : 'Ajuste manual (descuento)',
-        importe: cantidad,
-        creadoEn: firebase.firestore.FieldValue.serverTimestamp(),
-      });
-    }
+    lote.set(movRef, {
+      miembroId,
+      texto: signo > 0
+        ? (tipo === 'dinero' ? 'Ajuste manual (bonus)' : 'Ajuste manual (bonus Neats)')
+        : (tipo === 'dinero' ? 'Ajuste manual (descuento)' : 'Ajuste manual (descuento Neats)'),
+      importe: tipo === 'dinero' ? cantidad : 0,
+      puntos: tipo === 'puntos' ? cantidad : 0,
+      creadoEn: firebase.firestore.FieldValue.serverTimestamp(),
+    });
     await lote.commit();
   }
 
@@ -710,7 +737,7 @@
           </div>
           <div class="tarea-detalles">
             <span class="dato"><span class="figura cuadrado">■</span> ${ESTANCIA_LABEL[t.estancia] || t.estancia}</span>
-            <span class="dato"><span class="figura circulo">●</span> ${formatearDinero(t.dinero)}</span>
+            <span class="dato"><span class="figura circulo">●</span> ${textoDineroTarea(t)}</span>
             <span class="dato"><span class="figura triangulo">▲</span> +${t.puntos || 0} Pts</span>
           </div>
           ${accion}
@@ -718,6 +745,10 @@
     }).join('');
   }
 
+  // Renderiza los movimientos de un hijo (pantalla "Mi Banco"). Soporta
+  // tanto movimientos de dinero como de puntos (Neats): si el movimiento
+  // trae "puntos" distinto de 0, se muestra en Pts; si no, se muestra
+  // como importe en euros.
   function renderizarMovimientos(docs) {
     const lista = document.querySelector('#pantalla-banco-hijo ul');
     if (!lista) return;
@@ -726,9 +757,12 @@
       return;
     }
     lista.innerHTML = docs.map((m) => {
-      const positivo = (m.importe || 0) >= 0;
+      const esPuntos = !!m.puntos;
+      const valor = esPuntos ? m.puntos : (m.importe || 0);
+      const positivo = valor >= 0;
       const signo = positivo ? '+' : '';
-      return `<li><span>${m.texto}</span><span class="importe ${positivo ? 'positivo' : 'negativo'}">${signo}${formatearDinero(m.importe)}</span></li>`;
+      const texto = esPuntos ? `${signo}${valor} Pts` : `${signo}${formatearDinero(valor)}`;
+      return `<li><span>${m.texto}</span><span class="importe ${positivo ? 'positivo' : 'negativo'}">${texto}</span></li>`;
     }).join('');
   }
 
@@ -839,13 +873,127 @@
       </div>`).join('');
   }
 
+  // Lista de TODOS los miembros aprobados de la familia (padres e hijos),
+  // usada en la pantalla de Aprobaciones. En vez de los botones +/- para
+  // ajustar saldo, cada tarjeta lleva un único botón con un emoji para
+  // quitar a esa persona de la familia.
+  function renderizarFamiliaCompleta(miembrosAprobados) {
+    const contenedor = document.getElementById('lista-familia-aprobaciones');
+    if (!contenedor) return;
+
+    if (miembrosAprobados.length === 0) {
+      contenedor.innerHTML = `<div class="estado-vacio"><span class="emoji-vacio">👨‍👩‍👧‍👦</span><p>Aún no hay miembros en tu familia.</p></div>`;
+      return;
+    }
+
+    contenedor.innerHTML = miembrosAprobados.map((m) => {
+      const nombreSeguro = escaparHTML(m.nombre);
+      const esYoMismo = ESTADO.miembroActual && m.id === ESTADO.miembroActual.id;
+      return `
+      <div class="tarjeta-hijo">
+        ${avatarHTML(m)}
+        <div class="info-hijo">
+          <strong>${nombreSeguro}</strong>
+          <span class="rol-perfil">${m.rol === 'padre' ? 'Padre/Madre' : 'Hijo/a'}</span>
+        </div>
+        ${esYoMismo ? '' : `<button class="btn-quitar-miembro" type="button" data-accion="eliminar-miembro" data-id="${m.id}" data-nombre="${nombreSeguro}" aria-label="Quitar a ${nombreSeguro} de la familia" title="Quitar de la familia">🚫</button>`}
+      </div>`;
+    }).join('');
+  }
+
+  // Renderiza en el inicio del padre los últimos movimientos relevantes:
+  // tareas cobradas, ajustes manuales y ahorro en objetivos de sus hijos,
+  // más los pagos que un hijo le haya hecho a él.
+  //
+  // Cada transferencia genera DOS documentos en Firestore (uno por cada
+  // miembro implicado: uno en negativo para quien envía, otro en positivo
+  // para quien recibe). Para no duplicar el mismo pago ni mostrarlo como
+  // una salida de dinero, cuando el movimiento es un pago de un hijo a un
+  // padre ("esPagoHijoPadre") nos quedamos SOLO con el documento del padre
+  // (el que va en positivo, porque es dinero recibido) y descartamos el
+  // del hijo (que va en negativo, porque para el hijo es una salida).
+  function renderizarMovimientosPadre() {
+    const lista = document.getElementById('lista-movimientos-padre-inicio');
+    if (!lista) return;
+
+    const idsHijos = new Set(ESTADO.hijosFamiliaCache.map((h) => h.id));
+
+    const movimientosRelevantes = ESTADO.movimientosFamiliaCache.filter((m) => {
+      if (m.esPagoHijoPadre) return !idsHijos.has(m.miembroId); // nos quedamos con el lado del padre (positivo)
+      return idsHijos.has(m.miembroId); // resto de movimientos: los que pertenecen a un hijo
+    }).slice(0, 10);
+
+    if (movimientosRelevantes.length === 0) {
+      lista.innerHTML = `<li style="justify-content:center; color:var(--color-ink-faint);">Todavía no hay movimientos</li>`;
+      return;
+    }
+
+    lista.innerHTML = movimientosRelevantes.map((m) => {
+      // Si el movimiento pertenece a un hijo, usamos su nombre desde la
+      // caché; si es el lado del padre en un pago recibido, usamos el
+      // nombre de quien lo envió (guardado en miembroNombreOrigen).
+      const nombreMostrado = idsHijos.has(m.miembroId)
+        ? (ESTADO.hijosFamiliaCache.find((h) => h.id === m.miembroId) || {}).nombre || ''
+        : (m.miembroNombreOrigen || '');
+      const esPuntos = !!m.puntos;
+      const valor = esPuntos ? m.puntos : (m.importe || 0);
+      const positivo = valor >= 0;
+      const signo = positivo ? '+' : '';
+      const valorTexto = esPuntos ? `${signo}${valor} Pts` : `${signo}${formatearDinero(valor)}`;
+      const fecha = m.creadoEn && m.creadoEn.toDate ? m.creadoEn.toDate().toLocaleDateString('es-ES') : '';
+      return `
+        <li>
+          <div class="texto-mov">
+            <strong>${nombreMostrado ? nombreMostrado + ' — ' : ''}${m.texto}</strong>
+            <span class="fecha-mov">${fecha}</span>
+          </div>
+          <span class="importe" style="color:${positivo ? 'var(--color-success)' : 'var(--color-danger)'}">${valorTexto}</span>
+        </li>`;
+    }).join('');
+  }
+
+  // Refleja en la tarjeta "Modo de pago" de Ajustes el valor guardado en
+  // Firestore: qué chip está activo, si se muestran los campos de la paga
+  // fija, y los valores de importe/frecuencia.
+  function aplicarModoPagoUI(modo, importe, frecuencia) {
+    document.querySelectorAll('#selector-modo-pago .chip-tipo').forEach((chip) => {
+      chip.classList.toggle('activo', chip.dataset.modo === modo);
+    });
+    const camposPagaFija = document.getElementById('campos-paga-fija');
+    if (camposPagaFija) camposPagaFija.style.display = modo === 'paga' ? 'block' : 'none';
+
+    const inputImporte = document.getElementById('ajustes-paga-importe');
+    if (inputImporte && document.activeElement !== inputImporte) {
+      inputImporte.value = importe || '';
+    }
+    const selectFrecuencia = document.getElementById('ajustes-paga-frecuencia');
+    if (selectFrecuencia && document.activeElement !== selectFrecuencia) {
+      selectFrecuencia.value = frecuencia || 'semanal';
+    }
+  }
+
+  // Cuando la familia paga con "Paga fija", el dinero de cada tarea ya no
+  // se define tarea a tarea: se sustituye el campo numérico por un aviso,
+  // y solo quedan los puntos como recompensa configurable por tarea.
+  function actualizarCampoDineroNuevaTarea() {
+    const esPaga = ESTADO.familiaActual?.modoPago === 'paga';
+    const campoDinero = document.getElementById('campo-dinero-nueva-tarea');
+    const campoPagaInfo = document.getElementById('campo-paga-nueva-tarea');
+    const inputDinero = document.getElementById('dinero-nueva-tarea');
+    if (campoDinero) campoDinero.style.display = esPaga ? 'none' : 'block';
+    if (campoPagaInfo) campoPagaInfo.style.display = esPaga ? 'block' : 'none';
+    if (inputDinero) inputDinero.required = !esPaga;
+  }
+
   function renderizarAprobaciones(hijosPendientes) {
     const contenedor = document.getElementById('lista-aprobaciones');
     const banner = document.getElementById('banner-aprobaciones');
     const contadorBanner = document.getElementById('contador-aprobaciones-pendientes');
+    const contadorAjustes = document.getElementById('contador-aprobaciones-pendientes-ajustes');
 
     if (banner) banner.style.display = hijosPendientes.length ? 'flex' : 'none';
     if (contadorBanner) contadorBanner.textContent = String(hijosPendientes.length);
+    if (contadorAjustes) contadorAjustes.textContent = String(hijosPendientes.length);
     if (!contenedor) return;
 
     if (hijosPendientes.length === 0) {
@@ -899,7 +1047,7 @@
           </div>
           <div class="tarea-detalles">
             <span class="dato"><span class="figura cuadrado">■</span> ${ESTANCIA_LABEL[t.estancia] || t.estancia}</span>
-            <span class="dato"><span class="figura circulo">●</span> ${formatearDinero(t.dinero)}</span>
+            <span class="dato"><span class="figura circulo">●</span> ${textoDineroTarea(t)}</span>
             <span class="dato"><span class="figura triangulo">▲</span> +${t.puntos || 0} Pts</span>
           </div>
           ${acciones}
@@ -990,6 +1138,10 @@
 
     const textoCodigo = document.getElementById('texto-codigo-familia');
     if (textoCodigo) textoCodigo.textContent = codigo ? `NEAT-${codigo}` : '—';
+    const textoCodigoAjustes = document.getElementById('texto-codigo-familia-ajustes');
+    if (textoCodigoAjustes) textoCodigoAjustes.textContent = codigo ? `NEAT-${codigo}` : '—';
+    const inputNombreFamilia = document.getElementById('ajustes-nombre-familia');
+    if (inputNombreFamilia) inputNombreFamilia.value = ESTADO.familiaActual.nombre || '';
 
     const fRef = db.collection('familias').doc(familiaId);
 
@@ -1007,12 +1159,37 @@
 
         const pendientes = miembros.filter((m) => !m.aprobado);
         renderizarAprobaciones(pendientes);
+
+        const todosAprobados = miembros.filter((m) => m.aprobado);
+        renderizarFamiliaCompleta(todosAprobados);
+
+        // Los nombres/lista de hijos pueden haber llegado o cambiado ahora,
+        // así que volvemos a pintar los movimientos con la info actualizada.
+        renderizarMovimientosPadre();
       }),
       // Más nueva arriba, más vieja abajo. Las aprobadas se archivan y
       // desaparecen de aquí automáticamente (ver resolverTarea).
       fRef.collection('tareas').orderBy('creadoEn', 'desc').onSnapshot((snap) => {
         ESTADO.tareasFamiliaCache = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
         renderizarTareasPadre();
+      }),
+      // Últimos movimientos de toda la familia (se filtran por hijo al renderizar).
+      fRef.collection('movimientos').orderBy('creadoEn', 'desc').limit(30).onSnapshot((snap) => {
+        ESTADO.movimientosFamiliaCache = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        renderizarMovimientosPadre();
+      }),
+      // Nombre de familia y modo de pago, para tenerlos al día en Ajustes.
+      fRef.onSnapshot((doc) => {
+        if (!doc.exists) return;
+        const datos = doc.data();
+        ESTADO.familiaActual.nombre = datos.nombre || ESTADO.familiaActual.nombre;
+        ESTADO.familiaActual.modoPago = datos.modoPago || 'tarea';
+        const inputNombreFamilia = document.getElementById('ajustes-nombre-familia');
+        if (inputNombreFamilia && document.activeElement !== inputNombreFamilia) {
+          inputNombreFamilia.value = ESTADO.familiaActual.nombre || '';
+        }
+        aplicarModoPagoUI(ESTADO.familiaActual.modoPago, datos.pagaImporte, datos.pagaFrecuencia);
+        actualizarCampoDineroNuevaTarea();
       })
     );
   }
@@ -1132,11 +1309,12 @@
   function inicializarLogoAdulto() {
     const inputArchivo = document.getElementById('input-logo-adulto');
     const preview = document.getElementById('avatar-preview-adulto');
-    const btnCargar = document.getElementById('btn-cargar-logo-adulto');
     const btnContinuar = document.getElementById('btn-continuar-logo-adulto');
     const btnOmitir = document.getElementById('btn-omitir-logo-adulto');
 
-    btnCargar?.addEventListener('click', () => inputArchivo?.click());
+    // btn-cargar-logo-adulto es ahora un <label for="input-logo-adulto">,
+    // así que el propio navegador abre el selector de archivos de forma
+    // nativa al tocarlo — no hace falta (ni conviene) disparar click() por JS.
 
     inputArchivo?.addEventListener('change', async (evento) => {
       const archivo = evento.target.files[0];
@@ -1162,7 +1340,7 @@
 
     const continuarConLogo = () => {
       if (ESTADO.registroTemporalAdulto) {
-        ESTADO.registroTemporalAdulto.avatarImagen = avatarImagenAdultoTemp || null;
+        ESTADO.registroTemporalAdulto.avatarImagen = avatarImagenAdultoTemp || ESTADO.registroTemporalAdulto.avatarImagen || null;
       }
       avatarImagenAdultoTemp = null;
       if (preview) {
@@ -1208,9 +1386,9 @@
       cerrarSesion();
     });
 
-    document.getElementById('btn-cargar-imagen-menu')?.addEventListener('click', () => {
-      document.getElementById('input-foto-perfil')?.click();
-    });
+    // btn-cargar-imagen-menu es ahora un <label for="input-foto-perfil">,
+    // así que el propio navegador abre el selector de archivos de forma
+    // nativa al tocarlo — no hace falta (ni conviene) disparar click() por JS.
 
     document.getElementById('selector-avatar-menu')?.addEventListener('click', async (evento) => {
       const boton = evento.target.closest('.opcion-avatar-animal');
@@ -1259,7 +1437,13 @@
     password: document.getElementById('password-adult').value,
     avatarImagen: null,
   };
-  irAPantalla('pantalla-logo-adulto');
+  // TODO: aquí falta la parte real (Cloud Functions + servicio de email) que
+  // genere un código de 6 dígitos y lo envíe a ESTADO.registroTemporalAdulto.email.
+  // Por ahora la pantalla siguiente es solo visual: cualquier código de 6
+  // dígitos que se escriba avanza al siguiente paso.
+  const textoEmail = document.getElementById('texto-email-otp');
+  if (textoEmail) textoEmail.textContent = ESTADO.registroTemporalAdulto.email;
+  irAPantalla('pantalla-verificacion-otp');
 });
 
     const formHijo = document.getElementById('form-registro-hijo');
@@ -1513,26 +1697,32 @@
     const modal = document.getElementById('modal-login');
     const modoPin = document.getElementById('modo-pin');
     const modoPassword = document.getElementById('modo-password');
+    const botonEntrar = document.getElementById('btn-entrar-modal');
     const nombreEl = document.getElementById('modal-nombre');
     const emojiEl = document.getElementById('modal-emoji');
     const instruccionEl = document.getElementById('modal-instruccion');
     const botonMostrarPin = document.querySelector('.btn-mostrar-pin-boxes');
 
     nombreEl.textContent = `Hola, ${miembro.nombre}`;
+
+    // Ocultamos los tres modos y el botón "Entrar" por defecto; solo se
+    // muestra el que corresponda al tipo de cuenta de este perfil.
+    modoPin.style.display = 'none';
+    modoPassword.style.display = 'none';
+    if (botonMostrarPin) botonMostrarPin.style.display = 'none';
+    if (botonEntrar) botonEntrar.style.display = 'inline-flex';
+
     if (miembro.rol === 'hijo') {
       emojiEl.textContent = miembro.avatarEmoji || '🔐';
       instruccionEl.textContent = 'Introduce tu PIN de 4 dígitos para entrar.';
       modoPin.style.display = 'flex';
       if (botonMostrarPin) botonMostrarPin.style.display = 'block';
-      modoPassword.style.display = 'none';
       modoPin.querySelectorAll('.pin-box').forEach((c) => { c.value = ''; c.type = 'password'; c.classList.remove('lleno'); });
       if (botonMostrarPin) botonMostrarPin.textContent = '👁️ Mostrar PIN';
       setTimeout(() => modoPin.querySelector('.pin-box')?.focus(), 150);
     } else {
       emojiEl.textContent = '⚡';
       instruccionEl.textContent = 'Introduce tu contraseña para entrar.';
-      modoPin.style.display = 'none';
-      if (botonMostrarPin) botonMostrarPin.style.display = 'none';
       modoPassword.style.display = 'block';
       const inputPass = document.getElementById('input-pass-normal');
       if (inputPass) { inputPass.value = ''; inputPass.type = 'password'; }
@@ -1544,6 +1734,112 @@
   /* ================================================================
      15. PANTALLAS DEL PADRE — interacciones
      ================================================================ */
+  function inicializarAjustesPadre() {
+    function copiarCodigo(idTexto) {
+      const textoCompleto = document.getElementById(idTexto)?.textContent || '';
+      const codigoSoloNumeros = textoCompleto.replace('NEAT-', '').trim();
+      navigator.clipboard?.writeText(codigoSoloNumeros).then(() => {
+        mostrarToast('¡Código copiado al portapapeles!', 'exito');
+      }).catch(() => {
+        mostrarToast(codigoSoloNumeros, 'info');
+      });
+    }
+
+    document.getElementById('btn-copiar-codigo-ajustes')?.addEventListener('click', () => {
+      copiarCodigo('texto-codigo-familia-ajustes');
+    });
+
+    const formNombreFamilia = document.getElementById('form-ajustes-nombre-familia');
+    formNombreFamilia?.addEventListener('submit', async (evento) => {
+      evento.preventDefault();
+      if (!validarFormulario(formNombreFamilia)) {
+        mostrarToast('Escribe un nombre para la familia', 'error');
+        return;
+      }
+      const nuevoNombre = document.getElementById('ajustes-nombre-familia').value.trim();
+      const boton = formNombreFamilia.querySelector('button[type="submit"]');
+      boton.disabled = true;
+      try {
+        await db.collection('familias').doc(ESTADO.familiaActual.id).update({ nombre: nuevoNombre });
+        ESTADO.familiaActual.nombre = nuevoNombre;
+        mostrarToast('Nombre de familia actualizado', 'exito');
+      } catch (error) {
+        console.error(error);
+        mostrarToast('No se pudo actualizar el nombre', 'error');
+      } finally {
+        boton.disabled = false;
+      }
+    });
+
+    const formPassword = document.getElementById('form-ajustes-password');
+    formPassword?.addEventListener('submit', async (evento) => {
+      evento.preventDefault();
+      if (!validarFormulario(formPassword)) {
+        mostrarToast('Revisa los campos marcados en rojo', 'error');
+        return;
+      }
+      const passwordActual = document.getElementById('ajustes-password-actual').value;
+      const passwordNueva = document.getElementById('ajustes-password-nueva').value;
+      const boton = formPassword.querySelector('button[type="submit"]');
+      boton.disabled = true;
+      try {
+        const miembroRef = db.collection('familias').doc(ESTADO.familiaActual.id)
+          .collection('miembros').doc(ESTADO.miembroActual.id);
+        const miembroDoc = await miembroRef.get();
+        const hashActual = await hashTexto(passwordActual);
+        if (!miembroDoc.exists || hashActual !== miembroDoc.data().secretoHash) {
+          mostrarToast('La contraseña actual no es correcta', 'error');
+          return;
+        }
+        const hashNuevo = await hashTexto(passwordNueva);
+        await miembroRef.update({ secretoHash: hashNuevo });
+        mostrarToast('Contraseña actualizada', 'exito');
+        formPassword.reset();
+      } catch (error) {
+        console.error(error);
+        mostrarToast('No se pudo cambiar la contraseña', 'error');
+      } finally {
+        boton.disabled = false;
+      }
+    });
+
+    document.getElementById('btn-cerrar-sesion-ajustes')?.addEventListener('click', () => {
+      cerrarSesion();
+    });
+
+    document.getElementById('selector-modo-pago')?.addEventListener('click', (evento) => {
+      const chip = evento.target.closest('.chip-tipo');
+      if (!chip) return;
+      document.querySelectorAll('#selector-modo-pago .chip-tipo').forEach((c) => c.classList.remove('activo'));
+      chip.classList.add('activo');
+      const camposPagaFija = document.getElementById('campos-paga-fija');
+      if (camposPagaFija) camposPagaFija.style.display = chip.dataset.modo === 'paga' ? 'block' : 'none';
+    });
+
+    document.getElementById('btn-guardar-modo-pago')?.addEventListener('click', async (evento) => {
+      const boton = evento.currentTarget;
+      const chipActivo = document.querySelector('#selector-modo-pago .chip-tipo.activo');
+      const modo = chipActivo?.dataset.modo || 'tarea';
+      const importe = parseFloat(document.getElementById('ajustes-paga-importe').value) || 0;
+      const frecuencia = document.getElementById('ajustes-paga-frecuencia').value;
+
+      boton.disabled = true;
+      try {
+        await db.collection('familias').doc(ESTADO.familiaActual.id).update({
+          modoPago: modo,
+          pagaImporte: importe,
+          pagaFrecuencia: frecuencia,
+        });
+        mostrarToast('Modo de pago guardado', 'exito');
+      } catch (error) {
+        console.error(error);
+        mostrarToast('No se pudo guardar el modo de pago', 'error');
+      } finally {
+        boton.disabled = false;
+      }
+    });
+  }
+
   function inicializarPanelPadre() {
     document.getElementById('btn-copiar-codigo')?.addEventListener('click', () => {
       const textoCompleto = document.getElementById('texto-codigo-familia')?.textContent || '';
@@ -1578,6 +1874,7 @@
       poblarSelectHijos(hijosAprobados);
       const campoFecha = document.getElementById('fecha-nueva-tarea');
       if (campoFecha && !campoFecha.value) campoFecha.value = new Date().toISOString().slice(0, 10);
+      actualizarCampoDineroNuevaTarea();
       modalNuevaTarea?.showModal();
     });
     document.getElementById('btn-cerrar-nueva-tarea')?.addEventListener('click', () => modalNuevaTarea?.close());
@@ -1595,12 +1892,14 @@
       const boton = evento.target.querySelector('button[type="submit"]');
       boton.disabled = true;
       try {
+        const esPaga = ESTADO.familiaActual?.modoPago === 'paga';
         await crearTareaNueva({
           titulo: document.getElementById('titulo-nueva-tarea').value.trim(),
           estancia: document.getElementById('estancia-nueva-tarea').value,
           miembroId: opcionElegida.value,
           miembroNombre: opcionElegida.dataset.nombre,
-          dinero: parseFloat(document.getElementById('dinero-nueva-tarea').value) || 0,
+          dinero: esPaga ? 0 : (parseFloat(document.getElementById('dinero-nueva-tarea').value) || 0),
+          paga: esPaga,
           puntos: parseInt(document.getElementById('puntos-nueva-tarea').value, 10) || 0,
           fecha: document.getElementById('fecha-nueva-tarea').value,
           hora: document.getElementById('hora-nueva-tarea').value,
@@ -1645,6 +1944,25 @@
       } catch (error) {
         console.error(error);
         mostrarToast('No se pudo completar la acción', 'error');
+      }
+    });
+
+    document.getElementById('lista-familia-aprobaciones')?.addEventListener('click', async (evento) => {
+      const boton = evento.target.closest('[data-accion="eliminar-miembro"]');
+      if (!boton) return;
+      const id = boton.dataset.id;
+      const nombre = boton.dataset.nombre;
+
+      if (!confirm(`¿Quitar a ${nombre} de la familia? Esta acción no se puede deshacer.`)) return;
+
+      boton.disabled = true;
+      try {
+        await eliminarMiembroDeFamilia(id);
+        mostrarToast(`${nombre} ha sido eliminado/a de la familia`, 'info');
+      } catch (error) {
+        console.error(error);
+        mostrarToast('No se pudo eliminar a esta persona. Inténtalo de nuevo.', 'error');
+        boton.disabled = false;
       }
     });
   }
@@ -1908,7 +2226,10 @@
 
     const destinatarioDoc = await destinatarioRef.get();
     const nombreDestinatario = (destinatarioDoc.data() || {}).nombre || 'un familiar';
+    const rolDestinatario = (destinatarioDoc.data() || {}).rol || '';
+    const rolRemitente = ESTADO.miembroActual.rol;
     const etiquetaTipo = tipo === 'dinero' ? '' : ' (puntos)';
+    const esPagoHijoPadre = rolRemitente === 'hijo' && rolDestinatario === 'padre';
 
     const lote = db.batch();
     lote.update(remitenteRef, { [campoSaldo]: firebase.firestore.FieldValue.increment(-importe) });
@@ -1919,13 +2240,23 @@
       miembroId: ESTADO.miembroActual.id,
       texto: `Transferencia a ${nombreDestinatario}${etiquetaTipo}`,
       importe: tipo === 'dinero' ? -importe : 0,
+      puntos: tipo === 'puntos' ? -importe : 0,
+      remitenteRol: rolRemitente,
+      destinatarioRol: rolDestinatario,
+      esPagoHijoPadre,
       creadoEn: firebase.firestore.FieldValue.serverTimestamp(),
     });
+
     const movDestinatario = refFamilia().collection('movimientos').doc();
     lote.set(movDestinatario, {
       miembroId: destinatarioId,
+      miembroNombreOrigen: ESTADO.miembroActual.nombre,
       texto: `Transferencia de ${ESTADO.miembroActual.nombre}${etiquetaTipo}`,
       importe: tipo === 'dinero' ? importe : 0,
+      puntos: tipo === 'puntos' ? importe : 0,
+      remitenteRol: rolRemitente,
+      destinatarioRol: rolDestinatario,
+      esPagoHijoPadre,
       creadoEn: firebase.firestore.FieldValue.serverTimestamp(),
     });
 
@@ -1939,6 +2270,8 @@
     const mensajeError = document.getElementById('error-transferencia');
     const form = document.getElementById('form-transferencia');
     if (!modal || !form) return;
+
+    let procesando = false; // ← blindaje contra doble envío (doble clic / doble submit)
 
     document.getElementById('btn-abrir-transferencia')?.addEventListener('click', async () => {
       await poblarSelectDestinatarios();
@@ -1963,18 +2296,26 @@
       chip.classList.add('activo');
     });
 
-    form.addEventListener('submit', async (evento) => {
+    // onsubmit (asignación directa) en vez de addEventListener: si esta
+    // función se llamase dos veces por accidente, se SOBRESCRIBE el
+    // handler en lugar de acumularse un segundo listener.
+    form.onsubmit = async (evento) => {
       evento.preventDefault();
+      if (procesando) return; // ← evita crear dos transferencias iguales
+      procesando = true;
+
       const destinatarioId = document.getElementById('destinatario-transferencia').value;
       const tipo = selectorTipo.querySelector('.chip-tipo.activo')?.dataset.tipo || 'dinero';
       const importe = parseFloat(campoImporte.value);
 
       if (!destinatarioId) {
         mostrarToast('Elige a quién quieres enviarlo', 'error');
+        procesando = false;
         return;
       }
       if (!importe || importe <= 0) {
         mostrarToast('Introduce un importe válido', 'error');
+        procesando = false;
         return;
       }
 
@@ -1994,8 +2335,9 @@
         }
       } finally {
         boton.disabled = false;
+        procesando = false;
       }
-    });
+    };
   }
 
   /* ================================================================
@@ -2031,6 +2373,7 @@
     inicializarModalesFamilia();
     inicializarLoginPerfiles();
     inicializarPanelPadre();
+    inicializarAjustesPadre();
     inicializarModalAjusteSaldo(); // Removida la duplicación
     inicializarPanelHijo();
     inicializarModalTransferencia();
@@ -2043,9 +2386,9 @@
 
     inicializarCasillasAutoAvance('.otp-input', () => {
       mostrarToast('¡Correo verificado!', 'exito');
-      setTimeout(() => irAPantalla('pantalla-opcion-familia'), 500);
+      setTimeout(() => irAPantalla('pantalla-logo-adulto'), 500);
     });
-    
+
     inicializarCasillasAutoAvance('.pin-box', () => {
       document.getElementById('form-autenticacion')?.requestSubmit();
     });

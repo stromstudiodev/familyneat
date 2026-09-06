@@ -59,6 +59,15 @@
 /* ---------- 2. RESET ---------- */
 *, *::before, *::after{ box-sizing: border-box; }
 html{ -webkit-text-size-adjust: 100%; }
+
+/* Quita el recuadro azul/gris ("tap highlight") que Android pinta al
+   tocar cualquier elemento clicable. Sin esto, se ve sobresaliendo por
+   las esquinas de cualquier cosa con border-radius (botones, avatares,
+   chips, etc.), porque ese resaltado siempre es rectangular. */
+*{
+  -webkit-tap-highlight-color: rgba(0,0,0,0);
+}
+
 body{
   margin:0;
   font-family: var(--font-body);
@@ -636,6 +645,18 @@ footer nav a.activo{ color: var(--color-primary-dark); background: var(--color-p
 .btn-ajuste-saldo.restar{ background: var(--color-danger-soft); color:#9A2A2E; }
 .btn-ajuste-saldo:active{ transform: scale(.9); }
 
+/* Botón único (emoji) para quitar a alguien de la familia, usado en la
+   lista "Tu familia" de la pantalla de Aprobaciones. */
+.btn-quitar-miembro{
+  width:34px; height:34px; border-radius:50%; font-size:1rem;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  background: var(--color-danger-soft); color:#9A2A2E;
+  transition: transform var(--speed) var(--ease), background var(--speed) var(--ease);
+}
+.btn-quitar-miembro:hover{ background: var(--color-danger); color:#fff; }
+.btn-quitar-miembro:active{ transform: scale(.9); }
+.btn-quitar-miembro[disabled]{ opacity:.5; }
+
 .banner-aviso{
   display:flex; align-items:center; gap:10px; background: var(--color-warning-soft); color:#9A5B10;
   border-radius: var(--radius-md); padding:12px 16px; font-size:.85rem; font-weight:700; margin-bottom:18px;
@@ -644,6 +665,27 @@ footer nav a.activo{ color: var(--color-primary-dark); background: var(--color-p
 .banner-aviso .contador-aviso{
   background:#9A5B10; color:#fff; border-radius: var(--radius-pill); font-size:.72rem; padding:2px 9px; font-family: var(--font-mono);
 }
+
+/* ---------- Pantalla de Ajustes (padre) ---------- */
+.tarjeta-ajustes{
+  background: var(--color-surface); border: 2px solid var(--color-border);
+  border-radius: var(--radius-lg); padding:18px; margin-bottom:18px;
+}
+.tarjeta-ajustes h3{ margin:0 0 14px; font-size:1.02rem; }
+.tarjeta-ajustes form .campo-form:last-of-type{ margin-bottom:16px; }
+.tarjeta-ajustes-peligro{ border-color: var(--color-danger); }
+.tarjeta-ajustes-peligro p{ font-size:.85rem; color: var(--color-ink-soft); margin:0 0 12px; }
+
+.fila-ajustes-enlace{
+  display:flex; align-items:center; gap:10px; text-decoration:none; color: var(--color-ink);
+  font-weight:600; font-size:.92rem; padding:4px 0;
+}
+.fila-ajustes-enlace span:first-child{ flex:1; }
+.fila-ajustes-enlace .contador-aviso{
+  background: var(--color-warning-soft); color:#9A5B10; border-radius: var(--radius-pill);
+  font-size:.72rem; font-weight:700; padding:2px 9px; font-family: var(--font-mono);
+}
+.fila-ajustes-enlace .flecha-ajustes{ color: var(--color-ink-faint); font-size:1.2rem; }
 
 /* Pestañas de filtro (tareas del padre) */
 .filtro-tabs{ display:flex; gap:8px; margin-bottom:18px; overflow-x:auto; padding-bottom:2px; }
@@ -711,6 +753,12 @@ footer nav a.activo{ color: var(--color-primary-dark); background: var(--color-p
 #modal-transferencia select{ border-radius: 12px; }
 #modal-nueva-tarea select:focus, #modal-transferencia select:focus{ outline:none; border-color: var(--color-primary); box-shadow: 0 0 0 4px var(--color-primary-soft); }
 .fila-doble{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+.indicador-paga{
+  width:100%; padding:14px 16px; border-radius: var(--radius-md); border:2px dashed var(--color-border);
+  background: var(--color-surface-soft); font-family: var(--font-display); font-weight:600;
+  font-size:.95rem; color: var(--color-ink-soft); text-align:center;
+}
 
 /* Selector tipo "chip" (dinero/puntos, sumar/restar) */
 .selector-tipo{ display:flex; gap:10px; }
@@ -837,3 +885,23 @@ footer nav a.activo{ color: var(--color-primary-dark); background: var(--color-p
 .avatar-logo-adulto-grande{
   width:96px; height:96px; font-size:2.4rem; cursor:default;
 }
+
+.lista-movimientos-padre{ display:flex; flex-direction:column; gap:10px; margin-bottom:8px; }
+.lista-movimientos-padre li{
+  background: var(--color-surface); border-radius: var(--radius-sm); padding:12px 14px;
+  display:flex; justify-content:space-between; align-items:center; gap:10px;
+  box-shadow: var(--shadow-sm); border: 1px solid var(--color-border);
+  font-size:.85rem; font-weight:600;
+}
+.lista-movimientos-padre li .texto-mov{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+.lista-movimientos-padre li .texto-mov strong{ font-size:.85rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.lista-movimientos-padre li .fecha-mov{ font-size:.7rem; color: var(--color-ink-faint); font-weight:600; }
+.lista-movimientos-padre li .importe{ font-family: var(--font-mono); font-weight:700; color: var(--color-success); flex-shrink:0; }
+#ajustes-paga-frecuencia {
+  width: 100%;
+  height: 53px;
+  border-radius: 12px;
+  padding-left: 5px;
+  border: 2px solid var(--color-border);
+}
+
