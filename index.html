@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Neat — Organiza tu casa en equipo</title>
+    <meta name="description" content="Family Neat es una aplicación móvil que organiza las tareas del hogar por estancias y enseña a los hijos a gestionar su paga con transparencia.">
+    <meta name="robots" content="index, follow">
+    <meta name="theme-color" content="#00C9A7">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- Pantalla de carga mientras se conecta con Firebase -->
+<div id="pantalla-cargando">
+    <div class="spinner" aria-hidden="true"></div>
+    <p>Conectando con Family Neat...</p>
+</div>
+
+<div class="app-shell" id="app">
+
+    <!-- ==================== 1. PANTALLA INICIO / BIENVENIDA ==================== -->
+    <section id="pantalla-inicio" class="pantalla" data-screen>
+        <div class="pantalla-contenido">
+            <img src="logo1.png">
+            <h1>Bienvenido a Family Neat</h1>
+            <p>La organización de las tareas comienza ahora.</p>
+
+            <div class="contenedor-botones">
+                <button class="btn btn-primary" id="button-register-children" type="button" data-ir="pantalla-registro-hijo">Soy Hijo/a</button>
+                <button class="btn btn-secondary" id="button-register-parents" type="button" data-ir="pantalla-registro-adulto">Soy Padre/Madre</button>
+            </div>
+
+            <div class="pie-login">
+                <span>¿Usted ya está registrado?</span>
+                <a href="#pantalla-login-perfiles">Inicie sesión aquí</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== 2. CREAR PERFIL ADULTO ==================== -->
+    <section id="pantalla-registro-adulto" class="pantalla" data-screen>
+        <div class="pantalla-contenido">
+            <div class="barra-superior"><button class="btn-atras" type="button" data-accion="volver" aria-label="Volver">←</button></div>
+            <span class="eyebrow">Padre / Madre</span>
+            <h1>Crear perfil de Adulto</h1>
+            <p>¡Completa el formulario para que comience la gestión de tu hogar!</p>
+
+            <form id="form-registro-adulto" novalidate>
+                <fieldset>
+                    <legend class="visually-hidden">Crear perfil de Adulto</legend>
+
+                    <div class="campo-form">
+                        <label for="name-adult">Nombre</label>
+                        <input type="text" id="name-adult" name="name-adult" placeholder="Escribe tu nombre aquí." required>
+                        <p class="mensaje-error">Escribe tu nombre para continuar.</p>
+                    </div>
+
+                    <div class="campo-form">
+                        <label for="email-adult">Email</label>
+                        <input type="email" name="email" id="email-adult" placeholder="Escribe tu email aquí." required>
+                        <p class="mensaje-error">Introduce un email válido.</p>
+                    </div>
+
+                    <div class="campo-form">
+                        <label for="password-adult">Contraseña</label>
+                        <div class="input-con-ojo">
+                            <input type="password" name="password" id="password-adult" placeholder="Escribe tu contraseña aquí." minlength="6" required>
+                            <button type="button" class="btn-mostrar-pass" data-objetivo="password-adult" aria-label="Mostrar contraseña">👁️</button>
+                        </div>
+                        <p class="mensaje-error">Mínimo 6 caracteres.</p>
+                    </div>
+
+                    <button class="btn btn-primary" type="submit">Registrarse</button>
+                </fieldset>
+            </form>
+        </div>
+    </section>
+
+     <!-- ==================== 2B. FOTO/LOGO ADULTO ==================== -->
+    <section id="pantalla-logo-adulto" class="pantalla" data-screen>
+        <div class="pantalla-contenido sin-nav">
+            <div class="barra-superior"><button class="btn-atras" type="button" data-accion="volver" aria-label="Volver">←</button></div>
+            <span class="eyebrow">Último paso</span>
+            <h1>Añade tu foto o logo</h1>
+            <p>Puedes subir una foto tuya o el logo de tu familia. Es opcional, podrás cambiarlo más adelante.</p>
+
+            <div class="selector-logo-adulto selector-logo-adulto-pantalla">
+                <span class="avatar avatar-logo-adulto-grande" id="avatar-preview-adulto" aria-hidden="true" style="background:#00C9A7">?</span>
+                <div class="opciones-cargar-foto">
+                    <label class="btn btn-secondary" for="input-logo-adulto-camara" id="btn-camara-logo-adulto">📸 Hacer foto</label>
+                    <label class="btn btn-secondary" for="input-logo-adulto" id="btn-cargar-logo-adulto">🖼️ Subir foto</label>
+                </div>
+            </div>
+            <input type="file" id="input-logo-adulto-camara" accept="image/*" capture="user" class="visually-hidden">
+            <input type="file" id="input-logo-adulto" accept="image/*" class="visually-hidden">
+
+            <div class="contenedor-botones">
+                <button class="btn btn-primary" type="button" id="btn-continuar-logo-adulto">Continuar</button>
+                <button class="btn btn-ghost" type="button" id="btn-omitir-logo-adulto">Omitir por ahora</button>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- ==================== 3. CREAR PERFIL HIJO ==================== -->
+    <section id="pantalla-registro-hijo" class="pantalla" data-screen>
+        <div class="pantalla-contenido">
+            <div class="barra-superior"><button class="btn-atras" type="button" data-accion="volver" aria-label="Volver">←</button></div>
+            <span class="eyebrow">Hijo / Hija</span>
+            <h1>👦 Crea tu perfil</h1>
+            <p style="margin-bottom: 20px;">¡Completa el formulario para empezar a conseguir puntos!</p>
+
+            <form id="form-registro-hijo" novalidate>
+                <fieldset>
+                    <legend class="visually-hidden">Crear perfil de Hijo/a</legend>
+
+                    <div class="campo-form">
+                        <label for="nombre-hijo">¿Cuál es tu nombre?</label>
+                        <input type="text" name="nombre" id="nombre-hijo" placeholder="Ej. Diego" required>
+                        <p class="mensaje-error">Escribe tu nombre para continuar.</p>
+                    </div>
+
+                    <div class="campo-form">
+                        <label for="pin-nino">Tu PIN secreto</label>
+                        <div class="input-con-ojo">
+                            <input type="password" id="pin-nino" name="pin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="••••" required>
+                            <button type="button" class="btn-mostrar-pass" data-objetivo="pin-nino" aria-label="Mostrar PIN">👁️</button>
+                        </div>
+                        <p class="mensaje-error">El PIN debe tener 4 números.</p>
+                    </div>
+
+
+                    <div class="campo-form">
+                        <label for="family-code-hijo">Código de familia</label>
+                        <div class="input-prefix-container">
+                            <span class="prefix">NEAT-</span>
+                            <input type="text" id="family-code-hijo" placeholder="123456" maxlength="6" inputmode="numeric" required>
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-primary" type="submit" style="margin-top:18px;">Continuar</button>
+                </fieldset>
+            </form>
+        </div>
+    </section>
+
+    <!-- ==================== 3B. ELEGIR AVATAR (HIJO) ==================== -->
+    <section id="pantalla-elegir-avatar" class="pantalla" data-screen>
+        <div class="pantalla-contenido sin-nav">
+            <div class="barra-superior"><button class="btn-atras" type="button" data-accion="volver" aria-label="Volver">←</button></div>
+            <span class="eyebrow">Último paso</span>
+            <h1>Elige tu avatar</h1>
+            <p>¿Cuál te representa mejor? Puedes cambiarlo más adelante.</p>
+            <div class="selector-avatar-animal selector-avatar-grande" id="selector-avatar-hijo">
+                <button type="button" class="opcion-avatar-animal seleccionado" data-emoji="🐶" aria-label="Perro">🐶</button>
+                <button type="button" class="opcion-avatar-animal" data-emoji="🐱" aria-label="Gato">🐱</button>
+                <button type="button" class="opcion-avatar-animal" data-emoji="🐰" aria-label="Conejo">🐰</button>
+                <button type="button" class="opcion-avatar-animal" data-emoji="🦊" aria-label="Zorro">🦊</button>
+                <button type="button" class="opcion-avatar-animal" data-emoji="🐼" aria-label="Panda">🐼</button>
+                <button type="button" class="opcion-avatar-animal" data-emoji="🐨" aria-label="Koala">🐨</button>
+                <button type="button" class="opcion-avatar-animal" data-emoji="🦁" aria-label="León">🦁</button>
+                <button type="button" class="opcion-avatar-animal" data-emoji="🐸" aria-label="Rana">🐸</button>
+                <button type="button" class="opcion-avatar-animal" data-emoji="🐵" aria-label="Mono">🐵</button>
+                <button type="button" class="opcion-avatar-animal" data-emoji="🐧" aria-label="Pingüino">🐧</button>
+                <button type="button" class="opcion-avatar-animal" data-emoji="🐯" aria-label="Tigre">🐯</button>
+                <button type="button" class="opcion-avatar-animal" data-emoji="🦄" aria-label="Unicornio">🦄</button>
+            </div>
+            <button class="btn btn-primary" type="button" id="btn-crear-perfil-hijo" style="margin-top:10px;">¡Crear mi perfil!</button>
+        </div>
+    </section>
+
+    <!-- ==================== 4. VERIFICACIÓN DE CORREO (CÓDIGO) ==================== -->
+    <section id="pantalla-verificacion-otp" class="pantalla" data-screen>
+        <div class="pantalla-contenido sin-nav">
+            <div class="barra-superior"><button class="btn-atras" type="button" data-accion="volver" aria-label="Volver">←</button></div>
+            <div class="logo" style="justify-content:center; margin-bottom:8px;"><img src="logo1.png" class="logo-marca"> Family Neat</div>
+            <h1 style="margin-top: 15px;">Verifica tu correo</h1>
+            <p>Hemos enviado un código de 6 dígitos a <strong id="texto-email-otp">tu email</strong>.</p>
+
+            <div class="otp-container">
+                <input type="text" maxlength="1" class="otp-input" inputmode="numeric" aria-label="Dígito 1 del código">
+                <input type="text" maxlength="1" class="otp-input" inputmode="numeric" aria-label="Dígito 2 del código">
+                <input type="text" maxlength="1" class="otp-input" inputmode="numeric" aria-label="Dígito 3 del código">
+                <input type="text" maxlength="1" class="otp-input" inputmode="numeric" aria-label="Dígito 4 del código">
+                <input type="text" maxlength="1" class="otp-input" inputmode="numeric" aria-label="Dígito 5 del código">
+                <input type="text" maxlength="1" class="otp-input" inputmode="numeric" aria-label="Dígito 6 del código">
+            </div>
+
+            <a href="#" id="btn-reenviar-otp">Reenviar correo</a>
+        </div>
+    </section>
+
+    <!-- ==================== 5. SELECCIÓN CREAR O UNIRSE A FAMILIA ==================== -->
+    <section id="pantalla-opcion-familia" class="pantalla" data-screen>
+        <div class="pantalla-contenido sin-nav">
+            <div class="barra-superior"><button class="btn-atras" type="button" data-accion="volver" aria-label="Volver">←</button></div>
+            <span class="eyebrow">Último paso</span>
+            <h1>Elige una opción</h1>
+            <p>¿Vas a organizar una casa nueva o ya tienes un código de familia?</p>
+
+            <div class="contenedor-botones">
+                <button class="btn btn-primary" id="btn-abrir-crear" type="button">Crear familia</button>
+                <button class="btn btn-secondary" id="btn-abrir-unirse" type="button">Unirse a una familia</button>
+            </div>
+        </div>
+
+        <!-- Modal: Crear familia -->
+        <dialog id="modal-crear">
+            <div id="vista-crear-formulario">
+                <h2>Crear una familia</h2>
+                <p>Estás a un paso de comenzar la organización en tu casa, solo queda ponerle un nombre a tu casa.</p>
+                <form id="form-crear-familia">
+                    <div class="campo-form">
+                        <label for="name-family">Nombre de la familia</label>
+                        <input type="text" name="name-family" id="name-family" placeholder="Ej. Los García" required>
+                    </div>
+                    <div class="dialog-actions">
+                        <button class="btn btn-secondary" type="button" id="btn-cerrar-crear">Cerrar</button>
+                        <button class="btn btn-primary" type="submit">Crear familia</button>
+                    </div>
+                </form>
+            </div>
+            <div id="vista-crear-exito" style="display:none;">
+                <div class="dialog-header">
+                    <span class="dialog-emoji" aria-hidden="true">🎉</span>
+                    <h2>¡Familia creada!</h2>
+                    <p>Comparte este código con el resto de tu familia para que se unan.</p>
+                </div>
+                <div class="codigo-generado" id="texto-codigo-generado">NEAT-000000</div>
+                <div class="dialog-actions">
+                    <button class="btn btn-primary" type="button" id="btn-cerrar-exito-crear">Entendido</button>
+                </div>
+            </div>
+        </dialog>
+
+        <!-- Modal: Unirse a familia -->
+        <dialog id="modal-unirse">
+            <h2>Unirse a una familia</h2>
+            <p>Introduce el código de invitación que te ha enviado el administrador de tu casa para vincular tu cuenta.</p>
+            <form id="form-unirse-familia">
+                <div class="campo-form">
+                    <label for="code-family">Código de invitación</label>
+                    <div class="input-prefix-container">
+                        <span class="prefix">NEAT-</span>
+                        <input type="text" name="code-family" id="code-family" placeholder="123456" maxlength="6" inputmode="numeric" required>
+                    </div>
+                </div>
+                <div class="dialog-actions">
+                    <button class="btn btn-secondary" type="button" id="btn-cerrar-unirse">Cerrar</button>
+                    <button class="btn btn-primary" type="submit">Unirse</button>
+                </div>
+            </form>
+        </dialog>
+    </section>
+
+    <!-- ==================== 6. ESPERA DE APROBACIÓN (HIJO) ==================== -->
+    <section id="pantalla-espera-aprobacion" class="pantalla" data-screen>
+        <div class="pantalla-contenido sin-nav">
+            <div class="barra-superior"><button class="btn-atras" type="button" data-accion="volver" aria-label="Volver">←</button></div>
+            <h1>¡Hola! 👋</h1>
+            <p>Hemos enviado la solicitud de acceso. En cuanto la aprueben en su app, podrás empezar a cumplir tareas y ganar puntos.</p>
+            <span class="estado-espera"><span class="punto-latido" aria-hidden="true"></span> Esperando aprobación de tus padres...</span>
+        </div>
+    </section>
+
+    <!-- ==================== 7. SELECCIÓN DE PERFILES E INICIO DE SESIÓN ==================== -->
+    <section id="pantalla-login-perfiles" class="pantalla" data-screen>
+        <div class="pantalla-contenido sin-nav">
+            <div class="barra-superior"><button class="btn-atras" type="button" data-accion="volver" aria-label="Volver">←</button></div>
+                <div class="logofn">
+                    <img src="logo1.png" style="  width: 50px; height: 50px; border-radius: 50%; object-fit: cover;
+                        flex-shrink: 0;">
+                    <h1 id="titulo">Family Neat</h1>
+                </div>
+            <p id="subtitulo">Introduce el código de tu casa para ver los perfiles.</p>
+
+            <!-- PASO 1: Código NEAT- -->
+            <div id="paso-1">
+                <div class="input-prefix-container" style="margin-top:20px;">
+                    <span class="prefix">NEAT-</span>
+                    <input type="text" id="code-family-search" placeholder="123456" maxlength="6" inputmode="numeric" required>
+                </div>
+                <button class="btn btn-primary" type="button" id="btn-buscar" style="margin-top:14px;">Buscar familia</button>
+            </div>
+
+            <!-- PASO 2: Cuadrados de perfiles -->
+            <div id="paso-2">
+                <div class="members-grid" id="grid-miembros"></div>
+                <button class="btn btn-secondary" type="button" id="btn-atras-paso1">Cambiar de código</button>
+            </div>
+        </div>
+
+        <!-- Modal Emergente para Autenticación -->
+        <dialog id="modal-login">
+            <form id="form-autenticacion">
+                <div class="dialog-header">
+                    <span class="dialog-emoji" id="modal-emoji" aria-hidden="true">⚡</span>
+                    <h2 id="modal-nombre">Hola</h2>
+                    <p id="modal-instruccion"></p>
+                </div>
+
+                <!-- MODO HIJO: 4 Casillas PIN -->
+                <div id="modo-pin" class="pin-4-container">
+                    <input type="password" maxlength="1" class="pin-box" inputmode="numeric" aria-label="Dígito 1 del PIN">
+                    <input type="password" maxlength="1" class="pin-box" inputmode="numeric" aria-label="Dígito 2 del PIN">
+                    <input type="password" maxlength="1" class="pin-box" inputmode="numeric" aria-label="Dígito 3 del PIN">
+                    <input type="password" maxlength="1" class="pin-box" inputmode="numeric" aria-label="Dígito 4 del PIN">
+                </div>
+                <button type="button" class="btn-mostrar-pin-boxes" aria-label="Mostrar PIN">👁️ Mostrar PIN</button>
+
+                <!-- MODO PADRE/MADRE: Contraseña normal -->
+                <div id="modo-password" class="campo-form" style="display:none;">
+                    <div class="input-con-ojo">
+                        <input type="password" id="input-pass-normal" class="password-normal-input" placeholder="Tu contraseña">
+                        <button type="button" class="btn-mostrar-pass" data-objetivo="input-pass-normal" aria-label="Mostrar contraseña">👁️</button>
+                    </div>
+                </div>
+
+                <div class="dialog-actions">
+                    <button class="btn btn-secondary" type="button" id="btn-cerrar-modal">Cancelar</button>
+                    <button class="btn btn-primary" type="submit" id="btn-entrar-modal">Entrar</button>
+                </div>
+            </form>
+        </dialog>
+    </section>
+
+    <!-- ==================== 8. DASHBOARD HIJO - TAREAS ==================== -->
+    <section id="pantalla-tareas-hijo" class="pantalla" data-screen>
+        <header>
+            <div class="header-contenido">
+                <h1>Family Neat</h1>
+                <button class="perfil-header-btn" type="button" data-accion="abrir-menu-perfil" aria-label="Abrir menú de perfil">
+                    <span class="nombre-header">{nombre usuario}</span>
+                    <span class="avatar-header" id="avatar-header-tareas" aria-hidden="true"></span>
+                </button>
+            </div>
+        </header>
+
+        <main>
+            <div class="cabecera-tareas-padre">
+                <h2>Tareas Pendientes</h2>
+                <button class="btn-exportar" type="button" id="btn-exportar-completadas-hijo">⬇ Descargar realizadas</button>
+            </div>
+            <p class="contador-tareas">x/x</p>
+
+            <div class="tareas"></div>
+        </main>
+
+        <footer>
+            <nav>
+                <a href="#pantalla-tareas-hijo"><span class="nav-icon">📋</span>Tareas</a>
+                <a href="#pantalla-banco-hijo"><span class="nav-icon">💰</span>Mi Banco</a>
+                <a href="#pantalla-objetivos-hijo"><span class="nav-icon">🎯</span>Objetivos</a>
+            </nav>
+        </footer>
+    </section>
+
+    <!-- ==================== 9. DASHBOARD HIJO - MI BANCO ==================== -->
+    <section id="pantalla-banco-hijo" class="pantalla" data-screen>
+        <header>
+            <div class="header-contenido">
+                <h1>Family Neat</h1>
+                <button class="perfil-header-btn" type="button" data-accion="abrir-menu-perfil" aria-label="Abrir menú de perfil">
+                    <span class="nombre-header">{nombre usuario}</span>
+                    <span class="avatar-header" id="avatar-header-banco" aria-hidden="true"></span>
+                </button>
+            </div>
+        </header>
+
+        <main>
+            <div class="resumen-saldos">
+                <div class="columna-saldo">
+                    <span class="etiqueta">Dinero</span>
+                    <span class="valor">V. Dinero</span>
+                </div>
+                <div class="columna-saldo">
+                    <span class="etiqueta">Neats</span>
+                    <span class="valor">V. Neats</span>
+                </div>
+            </div>
+
+            <button class="btn btn-secondary" type="button" id="btn-abrir-transferencia" style="margin-bottom:26px;">💸 Hacer una transferencia</button>
+
+            <h2>Últimos Movimientos</h2>
+            <ul></ul>
+
+            <h2>Ranking Semanal</h2>
+            <p class="recompensa-semanal-aviso" id="texto-recompensa-hijo" style="display:none;">
+                <span aria-hidden="true">🎁</span> Recompensa de esta semana: <strong></strong>
+            </p>
+            <ol class="lista-ranking"></ol>
+        </main>
+
+        <footer>
+            <nav>
+                <a href="#pantalla-tareas-hijo"><span class="nav-icon">📋</span>Tareas</a>
+                <a href="#pantalla-banco-hijo"><span class="nav-icon">💰</span>Mi Banco</a>
+                <a href="#pantalla-objetivos-hijo"><span class="nav-icon">🎯</span>Objetivos</a>
+            </nav>
+        </footer>
+
+        <!-- Modal: Transferencia -->
+        <dialog id="modal-transferencia">
+            <h2>Hacer una transferencia</h2>
+            <p>Envía dinero o puntos a otro miembro de tu familia.</p>
+            <form id="form-transferencia">
+                <div class="campo-form">
+                    <label for="destinatario-transferencia">¿A quién?</label>
+                    <select id="destinatario-transferencia" required></select>
+                </div>
+                <div class="campo-form">
+                    <label>¿Qué envías?</label>
+                    <div class="selector-tipo" id="tipo-transferencia">
+                        <button type="button" class="chip-tipo activo" data-tipo="dinero">💶 Dinero</button>
+                        <button type="button" class="chip-tipo" data-tipo="puntos">⭐ Puntos</button>
+                    </div>
+                </div>
+                <div class="campo-form">
+                    <label for="importe-transferencia">Importe</label>
+                    <input type="number" id="importe-transferencia" min="0.01" step="0.01" placeholder="0" required>
+                    <p class="mensaje-error" id="error-transferencia">No tienes suficiente saldo.</p>
+                </div>
+                <div class="dialog-actions">
+                    <button class="btn btn-secondary" type="button" id="btn-cerrar-transferencia">Cancelar</button>
+                    <button class="btn btn-primary" type="submit">Enviar</button>
+                </div>
+            </form>
+        </dialog>
+    </section>
+
+    <!-- ==================== 10. DASHBOARD HIJO - MIS OBJETIVOS ==================== -->
+    <section id="pantalla-objetivos-hijo" class="pantalla" data-screen>
+        <header>
+            <div class="header-contenido">
+                <h1>Family Neat</h1>
+                <button class="perfil-header-btn" type="button" data-accion="abrir-menu-perfil" aria-label="Abrir menú de perfil">
+                    <span class="nombre-header">{nombre usuario}</span>
+                    <span class="avatar-header" id="avatar-header-objetivos" aria-hidden="true"></span>
+                </button>
+            </div>
+        </header>
+
+        <main>
+            <div class="cabecera-objetivos">
+                <h2>Mis Objetivos</h2>
+                <span class="contador-objetivos">x/x</span>
+                <button type="button" id="btn-abrir-nuevo-objetivo">Añadir objetivo</button>
+            </div>
+
+            <div class="objetives"></div>
+        </main>
+
+        <footer>
+            <nav>
+                <a href="#pantalla-tareas-hijo"><span class="nav-icon">📋</span>Tareas</a>
+                <a href="#pantalla-banco-hijo"><span class="nav-icon">💰</span>Mi Banco</a>
+                <a href="#pantalla-objetivos-hijo"><span class="nav-icon">🎯</span>Objetivos</a>
+            </nav>
+        </footer>
+
+        <!-- Modal: Nuevo objetivo -->
+        <dialog id="modal-nuevo-objetivo">
+            <h2>Nuevo objetivo</h2>
+            <p>¿Qué quieres conseguir ahorrando?</p>
+            <form id="form-nuevo-objetivo">
+                <div class="campo-form">
+                    <label for="nombre-nuevo-objetivo">Nombre</label>
+                    <input type="text" id="nombre-nuevo-objetivo" placeholder="Ej. PlayStation 5" required>
+                </div>
+                <div class="campo-form">
+                    <label for="precio-nuevo-objetivo">Precio (€)</label>
+                    <input type="number" id="precio-nuevo-objetivo" min="0.01" step="0.01" placeholder="0" required>
+                </div>
+                <div class="dialog-actions">
+                    <button class="btn btn-secondary" type="button" id="btn-cerrar-nuevo-objetivo">Cancelar</button>
+                    <button class="btn btn-primary" type="submit">Crear objetivo</button>
+                </div>
+            </form>
+        </dialog>
+
+                <!-- Modal: Añadir dinero a un objetivo -->
+        <dialog id="modal-aportar-objetivo">
+            <h2>Añadir dinero</h2>
+            <p id="subtitulo-aportar-objetivo"></p>
+            <form id="form-aportar-objetivo">
+                <div class="campo-form">
+                    <label for="importe-aportar-objetivo">Importe (€)</label>
+                    <input type="number" id="importe-aportar-objetivo" min="0.01" step="0.01" placeholder="0" required>
+                    <p class="mensaje-error" id="error-aportar-objetivo">No tienes suficiente saldo.</p>
+                </div>
+                <div class="dialog-actions">
+                    <button class="btn btn-secondary" type="button" id="btn-cerrar-aportar-objetivo">Cancelar</button>
+                    <button class="btn btn-primary" type="submit">Añadir</button>
+                </div>
+            </form>
+        </dialog>
+    </section>
+
+    <!-- ==================== 11. DASHBOARD PADRE - INICIO ==================== -->
+    <section id="pantalla-padre-inicio" class="pantalla" data-screen>
+        <header>
+            <div class="header-contenido">
+                <h1>Family Neat</h1>
+                <button class="perfil-header-btn" type="button" data-accion="abrir-menu-perfil" aria-label="Abrir menú de perfil">
+                    <span class="nombre-header">{nombre usuario}</span>
+                    <span class="avatar-header" id="avatar-header-padre-inicio" aria-hidden="true"></span>
+                </button>
+            </div>
+        </header>
+
+        <main>
+            <div class="codigo-familia-mini">
+                <div>
+                    <span class="etiqueta-codigo">Código de tu familia</span>
+                    <span class="texto-codigo" id="texto-codigo-familia">NEAT-000000</span>
+                </div>
+                <button class="btn-copiar" type="button" id="btn-copiar-codigo">Copiar</button>
+            </div>
+
+            <a href="#pantalla-padre-aprobaciones" class="banner-aviso" id="banner-aprobaciones" style="display:none;">
+                <span>👋 Tienes solicitudes de hijos por aprobar</span>
+                <span class="contador-aviso" id="contador-aprobaciones-pendientes">0</span>
+            </a>
+
+            <div class="resumen-familia-titulo">
+                <h2>Tu familia</h2>
+                <button class="button-add-kid" type="button" id="btn-abrir-anadir-hijo">
+                    Añadir Hijo
+                </button>
+            </div>
+            <div class="tarjetas-hijos" id="lista-hijos-inicio"></div>
+
+            <!-- Modal: Añadir hijo sin dispositivo móvil (lo gestionan por completo los padres) -->
+            <dialog id="modal-anadir-hijo-sin-dispositivo">
+                <h2>Añadir hijo sin dispositivo móvil</h2>
+                <p>En este formulario podrás añadir un hijo que no tenga tablet ni móvil propio. Su perfil se crea ya aprobado y podrás gestionarlo tú desde aquí: asignarle tareas, ajustar su saldo y ver su progreso.</p>
+                <form id="form-anadir-hijo-sin-dispositivo" novalidate>
+                    <fieldset>
+                        <legend class="visually-hidden">Añadir hijo sin dispositivo móvil</legend>
+
+                        <div class="campo-form">
+                            <label for="nombre-hijo-sin-dispositivo">Nombre del hijo/a</label>
+                            <input type="text" id="nombre-hijo-sin-dispositivo" name="nombre" placeholder="Ej. Diego" required>
+                            <p class="mensaje-error">Escribe su nombre para continuar.</p>
+                        </div>
+
+                        <div class="campo-form">
+                            <label>Elige un avatar</label>
+                            <div class="selector-avatar-animal" id="selector-avatar-hijo-manual">
+                                <button type="button" class="opcion-avatar-animal seleccionado" data-emoji="🐶" aria-label="Perro">🐶</button>
+                                <button type="button" class="opcion-avatar-animal" data-emoji="🐱" aria-label="Gato">🐱</button>
+                                <button type="button" class="opcion-avatar-animal" data-emoji="🐰" aria-label="Conejo">🐰</button>
+                                <button type="button" class="opcion-avatar-animal" data-emoji="🦊" aria-label="Zorro">🦊</button>
+                                <button type="button" class="opcion-avatar-animal" data-emoji="🐼" aria-label="Panda">🐼</button>
+                                <button type="button" class="opcion-avatar-animal" data-emoji="🐨" aria-label="Koala">🐨</button>
+                                <button type="button" class="opcion-avatar-animal" data-emoji="🦁" aria-label="León">🦁</button>
+                                <button type="button" class="opcion-avatar-animal" data-emoji="🐸" aria-label="Rana">🐸</button>
+                                <button type="button" class="opcion-avatar-animal" data-emoji="🐵" aria-label="Mono">🐵</button>
+                                <button type="button" class="opcion-avatar-animal" data-emoji="🐧" aria-label="Pingüino">🐧</button>
+                                <button type="button" class="opcion-avatar-animal" data-emoji="🐯" aria-label="Tigre">🐯</button>
+                                <button type="button" class="opcion-avatar-animal" data-emoji="🦄" aria-label="Unicornio">🦄</button>
+                            </div>
+                        </div>
+
+                        <div class="campo-form">
+                            <label for="pin-hijo-sin-dispositivo">PIN secreto (opcional)</label>
+                            <div class="input-con-ojo">
+                                <input type="password" id="pin-hijo-sin-dispositivo" name="pin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="••••">
+                                <button type="button" class="btn-mostrar-pass" data-objetivo="pin-hijo-sin-dispositivo" aria-label="Mostrar PIN">👁️</button>
+                            </div>
+                            <p class="mensaje-error">Si añades un PIN, debe tener 4 números.</p>
+                            <p class="texto-ajustes-info">Solo hace falta si más adelante tu hijo/a quiere entrar desde su propio dispositivo con el código de familia.</p>
+                        </div>
+
+                        <div class="dialog-actions">
+                            <button class="btn btn-secondary" type="button" id="btn-cerrar-anadir-hijo">Cancelar</button>
+                            <button class="btn btn-primary" type="submit">Añadir hijo/a</button>
+                        </div>
+                    </fieldset>
+                </form>
+            </dialog>
+
+            <!-- Ranking Semanal: solo se muestra si hay algún hijo sin dispositivo propio,
+                 ya que esos hijos no pueden consultarlo ellos mismos en su panel. -->
+            <div class="resumen-familia-titulo" id="bloque-ranking-padre-inicio" style="margin-top:28px; display:none;">
+                    <h2>Ranking Semanal</h2>
+            </div>
+                    <ol class="lista-ranking" id="ranking-padre-inicio" style="display:none;"></ol>
+
+            <!-- Pagos que los hijos han hecho a los padres (transferencias), sin incluir cobros de tareas -->
+            <div class="resumen-familia-titulo" style="margin-top:28px;">
+                    <h2>Pagos recibidos de tus hijos</h2>
+            </div>
+                    <ul class="lista-movimientos-padre" id="lista-movimientos-padre-inicio"></ul>
+        </main>
+
+        <footer>
+            <nav>
+                <a href="#pantalla-padre-inicio"><span class="nav-icon">🏠</span>Inicio</a>
+                <a href="#pantalla-padre-tareas"><span class="nav-icon">📋</span>Tareas</a>
+                <a href="#pantalla-padre-ajustes"><span class="nav-icon">⚙️</span>Ajustes</a>
+            </nav>
+        </footer>
+
+        <!-- Modal: Ajustar saldo de un hijo -->
+        <!-- Modal: Ajustar saldo de un hijo -->
+        <dialog id="modal-ajustar-saldo">
+     <h2>Ajustar saldo</h2>
+    <form id="form-ajustar-saldo">
+        <div class="campo-form">
+            <label>¿Qué ajustas?</label>
+            <div class="selector-tipo" id="tipo-ajustar-saldo">
+                <button type="button" class="chip-tipo activo" data-tipo="dinero">💶 Dinero</button>
+                <button type="button" class="chip-tipo" data-tipo="puntos">⭐ Neats</button>
+            </div>
+        </div>
+        <div class="campo-form">
+            <label for="importe-ajustar-saldo">Importe</label>
+            <input type="number" id="importe-ajustar-saldo" min="0.01" step="0.01" placeholder="0" required>
+        </div>
+        <div class="dialog-actions">
+            <button class="btn btn-secondary" type="button" id="btn-cerrar-ajustar-saldo">Cancelar</button>
+            <button class="btn btn-primary" type="submit">Confirmar</button>
+        </div>
+    </form>
+</dialog>
+
+        <!-- Modal: Tareas pendientes de un hijo (se abre al pulsar su tarjeta en "Tu familia") -->
+        <dialog id="modal-tareas-hijo">
+            <h2 id="titulo-modal-tareas-hijo">Tareas pendientes</h2>
+            <div class="tareas" id="lista-tareas-modal-hijo"></div>
+            <div class="dialog-actions">
+                <button class="btn btn-secondary" type="button" id="btn-cerrar-tareas-hijo">Cerrar</button>
+            </div>
+        </dialog>
+    </section>
+
+    <!-- ==================== 12. DASHBOARD PADRE - TAREAS ==================== -->
+    <section id="pantalla-padre-tareas" class="pantalla" data-screen>
+        <header>
+            <div class="header-contenido">
+                <h1>Family Neat</h1>
+                <button class="perfil-header-btn" type="button" data-accion="abrir-menu-perfil" aria-label="Abrir menú de perfil">
+                    <span class="nombre-header">{nombre usuario}</span>
+                    <span class="avatar-header" id="avatar-header-padre-tareas" aria-hidden="true"></span>
+                </button>
+            </div>
+        </header>
+
+        <main>
+            <div class="cabecera-tareas-padre">
+                <h2>Tareas de la familia</h2>
+                <button class="btn-exportar" type="button" id="btn-exportar-completadas">⬇ Exportar</button>
+            </div>
+            <div class="filtro-tabs" id="filtro-tareas-padre">
+                <button class="filtro-tab activo" type="button" data-filtro="todas">Todas</button>
+                <button class="filtro-tab" type="button" data-filtro="revision">En revisión</button>
+                <button class="filtro-tab" type="button" data-filtro="pendiente">Pendientes</button>
+            </div>
+            <div class="tareas" id="lista-tareas-padre"></div>
+        </main>
+
+        <button class="btn-flotante" type="button" id="btn-nueva-tarea" aria-label="Añadir nueva tarea">+</button>
+
+        <footer>
+            <nav>
+                <a href="#pantalla-padre-inicio"><span class="nav-icon">🏠</span>Inicio</a>
+                <a href="#pantalla-padre-tareas"><span class="nav-icon">📋</span>Tareas</a>
+                <a href="#pantalla-padre-ajustes"><span class="nav-icon">⚙️</span>Ajustes</a>
+            </nav>
+        </footer>
+
+        <!-- Modal: Nueva tarea -->
+        <dialog id="modal-nueva-tarea">
+            <h2>Nueva tarea</h2>
+            <p>Asigna una tarea a uno de tus hijos.</p>
+            <form id="form-nueva-tarea">
+                <div class="campo-form">
+                    <label for="titulo-nueva-tarea">Título de la tarea</label>
+                    <input type="text" id="titulo-nueva-tarea" placeholder="Ej. Hacer la cama" required>
+                </div>
+                <div class="campo-form">
+                    <label for="hijo-nueva-tarea">Asignar a</label>
+                    <select id="hijo-nueva-tarea" required></select>
+                </div>
+                <div class="campo-form">
+                    <label for="estancia-nueva-tarea">Estancia</label>
+                    <select id="estancia-nueva-tarea" required>
+                        <option value="salon">Salón</option>
+                        <option value="cocina">Cocina</option>
+                        <option value="bano">Baño</option>
+                        <option value="habitacion">Habitación</option>
+                    </select>
+                </div>
+                <div class="fila-doble">
+                    <div class="campo-form" id="campo-dinero-nueva-tarea">
+                        <label for="dinero-nueva-tarea">Dinero (€)</label>
+                        <input type="number" id="dinero-nueva-tarea" min="0" step="0.10" value="1.00" required>
+                    </div>
+                    <div class="campo-form" id="campo-paga-nueva-tarea" style="display:none;">
+                        <label>Dinero</label>
+                        <div class="indicador-paga">💰 Paga</div>
+                    </div>
+                    <div class="campo-form">
+                        <label for="puntos-nueva-tarea">Puntos</label>
+                        <input type="number" id="puntos-nueva-tarea" min="0" step="5" value="10" required>
+                    </div>
+                </div>
+                <div class="fila-doble">
+                    <div class="campo-form">
+                        <label for="fecha-nueva-tarea">Fecha límite</label>
+                        <input type="date" id="fecha-nueva-tarea" required>
+                    </div>
+                    <div class="campo-form">
+                        <label for="hora-nueva-tarea">Hora</label>
+                        <input type="time" id="hora-nueva-tarea" value="20:00" required>
+                    </div>
+                </div>
+                <div class="dialog-actions">
+                    <button class="btn btn-secondary" type="button" id="btn-cerrar-nueva-tarea">Cancelar</button>
+                    <button class="btn btn-primary" type="submit">Crear tarea</button>
+                </div>
+            </form>
+        </dialog>
+    </section>
+
+    <!-- ==================== 13. DASHBOARD PADRE - APROBACIONES ==================== -->
+    <section id="pantalla-padre-aprobaciones" class="pantalla" data-screen>
+        <header>
+            <div class="header-contenido">
+                <h1>Family Neat</h1>
+                <button class="perfil-header-btn" type="button" data-accion="abrir-menu-perfil" aria-label="Abrir menú de perfil">
+                    <span class="nombre-header">{nombre usuario}</span>
+                    <span class="avatar-header" id="avatar-header-padre-aprob" aria-hidden="true"></span>
+                </button>
+            </div>
+        </header>
+
+        <main>
+            <h2>Solicitudes de acceso</h2>
+            <div class="lista-aprobaciones" id="lista-aprobaciones"></div>
+
+            <div class="resumen-familia-titulo" style="margin-top:28px;">
+                <h2>Tu familia</h2>
+            </div>
+            <div class="tarjetas-hijos" id="lista-familia-aprobaciones"></div>
+        </main>
+
+        <footer>
+            <nav>
+                <a href="#pantalla-padre-inicio"><span class="nav-icon">🏠</span>Inicio</a>
+                <a href="#pantalla-padre-tareas"><span class="nav-icon">📋</span>Tareas</a>
+                <a href="#pantalla-padre-ajustes"><span class="nav-icon">⚙️</span>Ajustes</a>
+            </nav>
+        </footer>
+    </section>
+
+    <!-- ==================== 14. DASHBOARD PADRE - AJUSTES ==================== -->
+    <section id="pantalla-padre-ajustes" class="pantalla" data-screen>
+        <header>
+            <div class="header-contenido">
+                <h1>Family Neat</h1>
+                <button class="perfil-header-btn" type="button" data-accion="abrir-menu-perfil" aria-label="Abrir menú de perfil">
+                    <span class="nombre-header">{nombre usuario}</span>
+                    <span class="avatar-header" id="avatar-header-padre-ajustes" aria-hidden="true"></span>
+                </button>
+            </div>
+        </header>
+
+        <main>
+            <h2>Ajustes</h2>
+
+            <div class="tarjeta-ajustes">
+                <h3>Solicitudes</h3>
+                <a href="#pantalla-padre-aprobaciones" class="fila-ajustes-enlace">
+                    <span>Solicitudes de acceso pendientes</span>
+                    <span class="contador-aviso" id="contador-aprobaciones-pendientes-ajustes">0</span>
+                    <span class="flecha-ajustes" aria-hidden="true">›</span>
+                </a>
+            </div>
+
+            <div class="tarjeta-ajustes">
+                <h3>Modo de pago</h3>
+                <div class="campo-form">
+                    <label>¿Cómo reciben dinero los hijos?</label>
+                    <div class="selector-tipo" id="selector-modo-pago">
+                        <button type="button" class="chip-tipo" data-modo="paga">💰 Paga fija</button>
+                        <button type="button" class="chip-tipo" data-modo="tarea">✅ Dinero por tarea</button>
+                    </div>
+                </div>
+
+                <div id="campos-paga-fija" style="display:none;">
+                    <div class="campo-form">
+                        <label for="ajustes-paga-importe">Importe de la paga</label>
+                        <input type="number" id="ajustes-paga-importe" min="0" step="0.01" placeholder="0">
+                    </div>
+                    <div class="campo-form">
+                        <label for="ajustes-paga-frecuencia">Frecuencia</label>
+                        <select id="ajustes-paga-frecuencia">
+                            <option value="semanal">Semanal</option>
+                            <option value="quincenal">Quincenal</option>
+                            <option value="mensual">Mensual</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button class="btn btn-secondary" type="button" id="btn-guardar-modo-pago">Guardar modo de pago</button>
+            </div>
+
+            <div class="tarjeta-ajustes">
+                <h3>🎁 Recompensa semanal</h3>
+                <p class="texto-ajustes-info">Define un premio para quien acabe primero en el ranking al terminar la semana. El ranking se reinicia automáticamente cada lunes.</p>
+                <div class="campo-form">
+                    <label for="ajustes-recompensa-texto">¿Cuál es la recompensa?</label>
+                    <input type="text" id="ajustes-recompensa-texto" placeholder="Ej. Elegir la peli del viernes" maxlength="80">
+                </div>
+                <button class="btn btn-secondary" type="button" id="btn-guardar-recompensa">Guardar recompensa</button>
+            </div>
+
+            <div class="tarjeta-ajustes">
+                <h3>Tu familia</h3>
+                <form id="form-ajustes-nombre-familia">
+                    <div class="campo-form">
+                        <label for="ajustes-nombre-familia">Nombre de la familia</label>
+                        <input type="text" id="ajustes-nombre-familia" name="ajustes-nombre-familia" placeholder="Nombre de tu familia" required>
+                    </div>
+                    <button class="btn btn-secondary" type="submit">Guardar nombre</button>
+                </form>
+
+                <div class="codigo-familia-mini" style="margin-top:16px;">
+                    <div>
+                        <span class="etiqueta-codigo">Código de tu familia</span>
+                        <span class="texto-codigo" id="texto-codigo-familia-ajustes">NEAT-000000</span>
+                    </div>
+                    <button class="btn-copiar" type="button" id="btn-copiar-codigo-ajustes">Copiar</button>
+                </div>
+            </div>
+
+            <div class="tarjeta-ajustes">
+                <h3>Tu cuenta</h3>
+                <form id="form-ajustes-password">
+                    <div class="campo-form">
+                        <label for="ajustes-password-actual">Contraseña actual</label>
+                        <div class="input-con-ojo">
+                            <input type="password" id="ajustes-password-actual" name="ajustes-password-actual" placeholder="Tu contraseña actual" required>
+                            <button type="button" class="btn-mostrar-pass" data-objetivo="ajustes-password-actual" aria-label="Mostrar contraseña">👁️</button>
+                        </div>
+                        <p class="mensaje-error">Introduce tu contraseña actual.</p>
+                    </div>
+                    <div class="campo-form">
+                        <label for="ajustes-password-nueva">Nueva contraseña</label>
+                        <div class="input-con-ojo">
+                            <input type="password" id="ajustes-password-nueva" name="ajustes-password-nueva" placeholder="Mínimo 6 caracteres" minlength="6" required>
+                            <button type="button" class="btn-mostrar-pass" data-objetivo="ajustes-password-nueva" aria-label="Mostrar contraseña">👁️</button>
+                        </div>
+                        <p class="mensaje-error">La contraseña debe tener al menos 6 caracteres.</p>
+                    </div>
+                    <button class="btn btn-secondary" type="submit">Cambiar contraseña</button>
+                </form>
+            </div>
+
+            <div class="tarjeta-ajustes tarjeta-ajustes-peligro">
+                <h3>Zona de peligro</h3>
+                <p>Cerrar tu sesión no borra ningún dato, solo saldrás de esta cuenta en este dispositivo.</p>
+                <button class="btn-danger-texto" type="button" id="btn-cerrar-sesion-ajustes">⎋ Cerrar sesión</button>
+            </div>
+        </main>
+
+        <footer>
+            <nav>
+                <a href="#pantalla-padre-inicio"><span class="nav-icon">🏠</span>Inicio</a>
+                <a href="#pantalla-padre-tareas"><span class="nav-icon">📋</span>Tareas</a>
+                <a href="#pantalla-padre-ajustes"><span class="nav-icon">⚙️</span>Ajustes</a>
+            </nav>
+        </footer>
+    </section>
+
+    <!-- ==================== 15. MENÚ DE PERFIL (avatar, foto y cerrar sesión) ==================== -->
+    <dialog id="modal-menu-perfil">
+        <div class="dialog-header">
+            <span class="avatar-header avatar-menu-grande" id="avatar-menu-perfil" aria-hidden="true"></span>
+            <h2 id="nombre-menu-perfil">Hola</h2>
+            <p>Elige un avatar o sube tu propia foto.</p>
+        </div>
+
+        <div class="selector-avatar-animal selector-avatar-grande" id="selector-avatar-menu">
+            <button type="button" class="opcion-avatar-animal" data-emoji="🐶" aria-label="Perro">🐶</button>
+            <button type="button" class="opcion-avatar-animal" data-emoji="🐱" aria-label="Gato">🐱</button>
+            <button type="button" class="opcion-avatar-animal" data-emoji="🐰" aria-label="Conejo">🐰</button>
+            <button type="button" class="opcion-avatar-animal" data-emoji="🦊" aria-label="Zorro">🦊</button>
+            <button type="button" class="opcion-avatar-animal" data-emoji="🐼" aria-label="Panda">🐼</button>
+            <button type="button" class="opcion-avatar-animal" data-emoji="🐨" aria-label="Koala">🐨</button>
+            <button type="button" class="opcion-avatar-animal" data-emoji="🦁" aria-label="León">🦁</button>
+            <button type="button" class="opcion-avatar-animal" data-emoji="🐸" aria-label="Rana">🐸</button>
+            <button type="button" class="opcion-avatar-animal" data-emoji="🐵" aria-label="Mono">🐵</button>
+            <button type="button" class="opcion-avatar-animal" data-emoji="🐧" aria-label="Pingüino">🐧</button>
+            <button type="button" class="opcion-avatar-animal" data-emoji="🐯" aria-label="Tigre">🐯</button>
+            <button type="button" class="opcion-avatar-animal" data-emoji="🦄" aria-label="Unicornio">🦄</button>
+        </div>
+
+        <div class="opciones-cargar-foto" style="margin-top:4px;">
+            <label class="btn btn-secondary" for="input-foto-perfil-camara" id="btn-camara-imagen-menu">📸 Hacer foto</label>
+            <label class="btn btn-secondary" for="input-foto-perfil" id="btn-cargar-imagen-menu">🖼️ Subir foto</label>
+        </div>
+
+        <div class="dialog-actions">
+            <button class="btn-danger-texto" type="button" id="btn-cerrar-sesion-menu">⎋ Cerrar sesión</button>
+            <button class="btn btn-secondary" type="button" id="btn-cerrar-menu-perfil">Cerrar</button>
+        </div>
+    </dialog>
+
+    <!-- inputs de archivo ocultos reutilizados para cambiar la foto de perfil:
+         uno abre la cámara directamente, el otro el selector de archivos normal -->
+    <input type="file" id="input-foto-perfil-camara" accept="image/*" capture="user" class="visually-hidden">
+    <input type="file" id="input-foto-perfil" accept="image/*" class="visually-hidden">
+
+    <!-- ==================== 16. RECORTAR FOTO (al subir una imagen ya existente) ==================== -->
+    <dialog id="modal-recortar-foto">
+        <h2>Recorta tu foto</h2>
+        <p>Arrastra la imagen para moverla y usa el control para acercar o alejar. Se guardará tal y como se vea dentro del círculo.</p>
+
+        <div class="lienzo-recortar-foto" id="lienzo-recortar-foto">
+            <img id="img-recortar-foto" alt="" draggable="false">
+        </div>
+
+        <input type="range" id="slider-zoom-recorte" min="1" max="3" step="0.01" value="1" aria-label="Acercar o alejar la foto">
+
+        <div class="dialog-actions">
+            <button class="btn btn-secondary" type="button" id="btn-cancelar-recorte-foto">Cancelar</button>
+            <button class="btn btn-primary" type="button" id="btn-confirmar-recorte-foto">Recortar y guardar</button>
+        </div>
+    </dialog>
+
+</div>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
